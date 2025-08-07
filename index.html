@@ -5,76 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Games Portfolio</title>
     <link rel="stylesheet" href="css/styles.css">
-    <style>
-        /* Gallery Styles */
-        .gallery {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .gallery img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .gallery img:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Lightbox Styles */
-        .lightbox {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .lightbox img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 10px;
-        }
-
-        .lightbox:target {
-            display: flex;
-        }
-    </style>
 </head>
 <body>
     <header>
         <h1>My Games Portfolio</h1>
+        <div class="search-container">
+            <input type="text" id="search-box" placeholder="Search for a game...">
+            <button id="search-button">Search</button>
+        </div>
     </header>
-    <main>
-        <section class="game">
-            <h2>Space Explorer</h2>
+    <main id="game-list">
+        <section class="game" data-title="Space Explorer">
+            <h2><a href="space-explorer.html">Space Explorer</a></h2>
             <p>Embark on an intergalactic journey in Space Explorer. Navigate through asteroid fields, battle alien ships, and explore distant planets.</p>
-            <div class="gallery">
-                <img src="images/space-explorer-1.jpg" alt="Space Explorer Screenshot 1">
-                <img src="images/space-explorer-2.jpg" alt="Space Explorer Screenshot 2">
+            <div class="gallery" data-game="space-explorer">
+                <img src="images/space-explorer-1.png" alt="Space Explorer Screenshot 1">
+                <img src="images/space-explorer-2.webp" alt="Space Explorer Screenshot 2">
                 <img src="images/space-explorer-3.jpg" alt="Space Explorer Screenshot 3">
             </div>
             <div class="game-buttons">
-                <a href="downloads/space-explorer-windows.zip" download>Download for Windows</a>
+                <a href="downloads/space-explorer-windows.7z" download>Download for Windows</a>
                 <a href="downloads/space-explorer-mac.zip" download>Download for Mac</a>
             </div>
         </section>
-        <section class="game">
-            <h2>Puzzle Master</h2>
+        <section class="game" data-title="Puzzle Master">
+            <h2><a href="puzzle-master.html">Puzzle Master</a></h2>
             <p>Challenge your mind with Puzzle Master, a game filled with intricate puzzles and brain-teasing challenges.</p>
-            <div class="gallery">
+            <div class="gallery" data-game="puzzle-master">
                 <img src="images/puzzle-master-1.jpg" alt="Puzzle Master Screenshot 1">
                 <img src="images/puzzle-master-2.jpg" alt="Puzzle Master Screenshot 2">
                 <img src="images/puzzle-master-3.jpg" alt="Puzzle Master Screenshot 3">
@@ -84,10 +41,10 @@
                 <a href="downloads/puzzle-master-mac.zip" download>Download for Mac</a>
             </div>
         </section>
-        <section class="game">
-            <h2>Racing Thunder</h2>
+        <section class="game" data-title="Racing Thunder">
+            <h2><a href="racing-thunder.html">Racing Thunder</a></h2>
             <p>Feel the adrenaline rush in Racing Thunder, a high-speed racing game with stunning visuals and intense gameplay.</p>
-            <div class="gallery">
+            <div class="gallery" data-game="racing-thunder">
                 <img src="images/racing-thunder-1.jpg" alt="Racing Thunder Screenshot 1">
                 <img src="images/racing-thunder-2.jpg" alt="Racing Thunder Screenshot 2">
                 <img src="images/racing-thunder-3.jpg" alt="Racing Thunder Screenshot 3">
@@ -102,5 +59,6 @@
         <p>&copy; 2025 My Games Portfolio. All rights reserved.</p>
     </footer>
     <script src="js/gallery.js"></script>
+    <script src="js/search.js"></script>
 </body>
 </html>

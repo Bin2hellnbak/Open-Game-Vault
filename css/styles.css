@@ -81,3 +81,111 @@ footer p {
     font-size: 0.9rem;
     color: #888;
 }
+
+/* Gallery Styles */
+.gallery {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.gallery img {
+    width: 120px; /* Set a fixed width */
+    height: 120px; /* Set a fixed height */
+    object-fit: cover; /* Ensures the image fits within the box while maintaining aspect ratio */
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gallery img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Lightbox Styles */
+.lightbox {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    flex-direction: column;
+}
+
+.lightbox img {
+    max-width: 90%;
+    max-height: 80%;
+    border-radius: 10px;
+}
+
+.lightbox .controls {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0 20px;
+}
+
+.lightbox .arrow {
+    font-size: 2rem;
+    color: #ffffff;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+}
+
+.lightbox .arrow:hover {
+    color: #00bcd4;
+}
+
+/* Search Box Styles */
+.search-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+#search-box {
+    width: 300px;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px 0 0 5px;
+    outline: none;
+    font-size: 1rem;
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+#search-button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    background-color: #00bcd4;
+    color: #ffffff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#search-button:hover {
+    background-color: #008c9e;
+}
+
+/* Remove underline and color change for links */
+a {
+    text-decoration: none; /* Removes the underline */
+    color: inherit; /* Inherits the color from the parent element */
+}
+
+a:hover {
+    color: #00bcd4; /* Optional: Add a hover effect for better interactivity */
+}
