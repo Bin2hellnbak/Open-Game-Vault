@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Game Vault - Game Details</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="title-row">
+      <a href="index.html" class="btn back-link" aria-label="Back to home"><span class="icon" aria-hidden="true">←</span> <span class="label">Home</span></a>
+      <h1 id="game-title">Game</h1>
+    </div>
+  </header>
+  <main>
+    <section class="game game-details" id="game-details">
+      <h2>About the Game</h2>
+      <p id="game-description"></p>
+      <h2>Gallery</h2>
+      <div class="gallery" id="game-gallery"></div>
+      <h2>Download</h2>
+      <div class="game-buttons" id="game-downloads"></div>
+    </section>
+  </main>
+  <footer>
+  <p>&copy; 2025 Open Game Vault. All rights reserved.</p>
+  </footer>
+  <script>
+    document.documentElement.setAttribute('data-page', 'game');
+  </script>
+  <script src="js/script.js"></script>
+  <script src="js/gallery.js"></script>
+  <script>
+  (async function(){
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('g');
+    if (!slug) return;
+  // Set gallery identifiers synchronously so gallery.js can derive immediately
+  const galleryEl = document.getElementById('game-gallery');
+  if (galleryEl) galleryEl.dataset.game = slug;
+  const section = document.getElementById('game-details');
+  if (section) section.dataset.folder = `assets/images/galleries/${slug}`;
+    try {
+      const res = await fetch('assets/data/games.json', { cache: 'no-cache' });
+      const data = await res.json();
+      const game = data[slug];
+      if (!game) return;
+      // Title
+      const titleEl = document.getElementById('game-title');
+      titleEl.textContent = game.name || slug;
+      document.title = `${game.name || slug} - Game Details`;
+      // Description
+      document.getElementById('game-description').textContent = game.description || '';
+  // No features anymore; description-only
+  // Gallery setup: keep derived folder unless JSON overrides it
+  if (game.galleryFolder && section) section.dataset.folder = game.galleryFolder;
+      // Downloads
+      const dlEl = document.getElementById('game-downloads');
+      dlEl.innerHTML = '';
+      const dls = game.downloads || {};
+      // Derive default Windows download if not provided: assets/downloads/<slug>/<slug>-windows.7z
+      const winUrl = dls.windows || `assets/downloads/${slug}/${slug}-windows.7z`;
+      // If an explicit URL is provided, render it directly
+      if (dls.windows) {
+        const a = document.createElement('a');
+        a.href = winUrl;
+        a.textContent = 'Download for Windows';
+        dlEl.appendChild(a);
+      } else {
+        // Probe the derived URL; enable link only if it exists
+        try {
+          const head = await fetch(winUrl, { method: 'HEAD', cache: 'no-cache' });
+          if (head.ok) {
+            const a = document.createElement('a');
+            a.href = winUrl;
+            a.textContent = 'Download for Windows';
+            dlEl.appendChild(a);
+          } else {
+            const a = document.createElement('a');
+            a.href = '#';
+            a.setAttribute('aria-disabled', 'true');
+            a.onclick = () => false;
+            a.className = 'btn';
+            a.textContent = 'Download for Windows';
+            dlEl.appendChild(a);
+          }
+        } catch (_) {
+          const a = document.createElement('a');
+          a.href = '#';
+          a.setAttribute('aria-disabled', 'true');
+          a.onclick = () => false;
+          a.className = 'btn';
+          a.textContent = 'Download for Windows';
+          dlEl.appendChild(a);
+        }
+      }
+    } catch (e) {
+      // fail silently
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Games Portfolio</title>
+    <title>Open Game Vault</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <header>
-        <h1>My Games Portfolio</h1>
+    <h1>Open Game Vault</h1>
         <div class="search-container">
             <input type="text" id="search-box" placeholder="Search for a game..." aria-label="Search games">
             <button id="search-button">Search</button>
@@ -16,38 +16,10 @@
     </header>
     <main id="game-list">
         <div id="results-status" class="sr-only" aria-live="polite"></div>
-        <div id="games-container">
-    <section class="game" id="space-explorer" data-title="Space Explorer" data-tags="space, shooter, sci-fi, arcade" data-folder="assets/images/galleries/space-explorer">
-            <div class="game-header">
-                <h2><a href="space-explorer.html">Space Explorer</a></h2>
-                <a class="btn view-btn" href="space-explorer.html">View</a>
-            </div>
-            <div class="cover" data-game="space-explorer">
-                <img src="assets/images/covers/space-explorer-cover.png" alt="Space Explorer cover" onerror="this.style.display='none'">
-            </div>
-    </section>
-    <section class="game" id="puzzle-master" data-title="Puzzle Master" data-tags="puzzle, logic, brain, casual" data-folder="assets/images/galleries/puzzle-master">
-            <div class="game-header">
-                <h2><a href="puzzle-master.html">Puzzle Master</a></h2>
-                <a class="btn view-btn" href="puzzle-master.html">View</a>
-            </div>
-            <div class="cover" data-game="puzzle-master">
-                <img src="assets/images/covers/puzzle-master-cover.png" alt="Puzzle Master cover" onerror="this.style.display='none'">
-            </div>
-    </section>
-    <section class="game" id="racing-thunder" data-title="Racing Thunder" data-tags="racing, cars, arcade, speed" data-folder="assets/images/galleries/racing-thunder">
-            <div class="game-header">
-                <h2><a href="racing-thunder.html">Racing Thunder</a></h2>
-                <a class="btn view-btn" href="racing-thunder.html">View</a>
-            </div>
-            <div class="cover" data-game="racing-thunder">
-                <img src="assets/images/covers/racing-thunder-cover.png" alt="Racing Thunder cover" onerror="this.style.display='none'">
-            </div>
-    </section>
-    </div>
+    <div id="games-container"></div>
     </main>
     <footer>
-        <p>&copy; 2025 My Games Portfolio. All rights reserved.</p>
+    <p>&copy; 2025 Open Game Vault. All rights reserved.</p>
     </footer>
         <script>
             // Mark this page as index so gallery.js can skip building inline galleries

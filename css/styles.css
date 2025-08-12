@@ -206,6 +206,41 @@ main {
     display: block;
 }
 
+/* Inline cover media viewer */
+.cover .inline-media {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+}
+.cover .inline-media img,
+.cover .inline-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: #000;
+}
+.cover .nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+.cover .nav:hover { background: rgba(0,0,0,0.7); transform: translateY(-50%) scale(1.05); }
+.cover .nav.prev { left: 10px; }
+.cover .nav.next { right: 10px; }
+
 /* Placeholder text when no cover image is available */
 .cover.empty::after {
     content: 'No image added yet';
@@ -280,6 +315,10 @@ footer p {
     flex-wrap: nowrap; /* single row preview */
     overflow-x: hidden;  /* hide horizontal overflow */
     overflow-y: visible; /* allow hover scale to show */
+    overscroll-behavior: none; /* fully stop scroll chaining */
+    touch-action: none; /* disable touch panning in gallery */
+    align-items: center; /* center thumbnails vertically */
+    height: var(--thumb-size, 120px); /* lock row height to prevent vertical jitter */
 }
 
 .gallery-empty {

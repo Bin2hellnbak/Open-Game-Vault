@@ -163,22 +163,174 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Mark covers with missing or broken images so a placeholder message shows
 	(function initCoverPlaceholders(){
+		// Skip on index; the cover area will host an inline gallery viewer instead
+		const isIndexHere = document.documentElement.getAttribute('data-page') === 'index';
+		if (isIndexHere) return;
 		const covers = document.querySelectorAll('.cover');
 		covers.forEach(cov => {
 			const img = cov.querySelector('img');
+			const tryDerived = () => {
+				const section = cov.closest('.game');
+				const slug = section?.id || cov.getAttribute('data-game');
+				if (!slug || !img) return false;
+				const candidates = [
+					`assets/images/covers/${slug}-cover.webp`,
+					`assets/images/covers/${slug}-cover.png`,
+					`assets/images/covers/${slug}-cover.jpg`,
+					`assets/images/covers/${slug}-cover.jpeg`,
+					`assets/images/${slug}-cover.webp`,
+					`assets/images/${slug}-cover.png`,
+					`assets/images/${slug}-cover.jpg`,
+					`assets/images/${slug}-cover.jpeg`
+				];
+				let idx = 0;
+				const next = () => {
+					if (idx >= candidates.length) { markEmpty(); return; }
+					const url = candidates[idx++];
+					const probe = new Image();
+					probe.onload = () => { img.style.display = ''; img.src = url; cov.classList.remove('empty'); };
+					probe.onerror = () => next();
+					probe.src = url;
+				};
+				next();
+				return true;
+			};
 			const markEmpty = () => {
 				cov.classList.add('empty');
 				if (img) img.style.display = 'none';
 			};
 			if (!img) { markEmpty(); return; }
-			if (!img.getAttribute('src')) { markEmpty(); return; }
-			if (img.complete && img.naturalWidth === 0) { markEmpty(); return; }
-			img.addEventListener('error', markEmpty, { once: true });
+			if (!img.getAttribute('src')) { if (!tryDerived()) markEmpty(); return; }
+			if (img.complete && img.naturalWidth === 0) { if (!tryDerived()) markEmpty(); return; }
+			img.addEventListener('error', () => { if (!tryDerived()) markEmpty(); }, { once: true });
 		});
 	})();
 
 	// For non-index pages, stop here (starfield only)
 	if (!isIndex) return;
+
+	// Sync index card titles from the manifest so renames in games.json reflect on the main page
+	(async function renderIndexFromManifest(){
+		const container = document.getElementById('games-container');
+		if (!container) return;
+		container.innerHTML = '';
+		let manifest = null;
+		try {
+			const res = await fetch('assets/data/games.json', { cache: 'no-cache' });
+			if (!res.ok) throw new Error('manifest fetch failed');
+			manifest = await res.json();
+			if (!manifest || typeof manifest !== 'object') throw new Error('manifest not object');
+		} catch (e) {
+			const p = document.createElement('p');
+			p.textContent = 'No games available. Check assets/data/games.json.';
+			container.appendChild(p);
+			return;
+		}
+		const entries = Object.entries(manifest);
+		if (!entries.length) {
+			const p = document.createElement('p');
+			p.textContent = 'No games available. Add entries to assets/data/games.json.';
+			container.appendChild(p);
+			return;
+		}
+		for (const [slug, entry] of entries) {
+			const name = entry?.name || slug;
+			const sec = document.createElement('section');
+			sec.className = 'game';
+			sec.id = slug;
+			sec.dataset.title = name;
+			sec.dataset.folder = `assets/images/galleries/${slug}`;
+			sec.innerHTML = `
+				<div class="game-header">
+					<h2><a href="game.html?g=${slug}">${name}</a></h2>
+					<a class="btn view-btn" href="game.html?g=${slug}">View</a>
+				</div>
+				<div class="cover" data-game="${slug}"></div>`;
+			container.appendChild(sec);
+		}
+		// After cards are rendered, build inline gallery viewers into each cover
+		initInlineCoverViewers();
+	})();
+
+	async function initInlineCoverViewers() {
+		const covers = document.querySelectorAll('#games-container .cover');
+		for (const cov of covers) {
+			const card = cov.closest('.game');
+			const slug = card?.id || cov.getAttribute('data-game');
+			const folder = card?.dataset.folder || (slug ? `assets/images/galleries/${slug}` : null);
+			cov.innerHTML = '';
+			cov.classList.remove('empty');
+			const mediaWrap = document.createElement('div');
+			mediaWrap.className = 'inline-media';
+			cov.appendChild(mediaWrap);
+			const prevBtn = document.createElement('button');
+			prevBtn.className = 'nav prev';
+			prevBtn.type = 'button';
+			prevBtn.setAttribute('aria-label','Previous');
+			prevBtn.textContent = '❮';
+			const nextBtn = document.createElement('button');
+			nextBtn.className = 'nav next';
+			nextBtn.type = 'button';
+			nextBtn.setAttribute('aria-label','Next');
+			nextBtn.textContent = '❯';
+			cov.appendChild(prevBtn);
+			cov.appendChild(nextBtn);
+
+			let items = [];
+			const exts = ['.jpg','.jpeg','.png','.webp','.gif','.mp4','.webm','.ogg'];
+			if (folder) {
+				try {
+					const res = await fetch(`${folder}/images.json`, { cache: 'no-cache' });
+					if (res.ok) {
+						const data = await res.json();
+						let list = null;
+						if (Array.isArray(data)) list = data;
+						else if (typeof data === 'string') list = [data];
+						else if (data && (Array.isArray(data.images) || Array.isArray(data.files))) list = Array.isArray(data.images) ? data.images : data.files;
+						if (list) items = list.filter(n => typeof n === 'string' && exts.some(ext => n.toLowerCase().endsWith(ext))).map(n => `${folder}/${n}`);
+					}
+				} catch {}
+			}
+
+			if (!items.length) {
+				// Graceful empty state
+				const empty = document.createElement('div');
+				empty.className = 'gallery-empty';
+				empty.textContent = 'No media added yet';
+				mediaWrap.appendChild(empty);
+				prevBtn.style.display = 'none';
+				nextBtn.style.display = 'none';
+				continue;
+			}
+
+			let idx = 0;
+			function render() {
+				mediaWrap.innerHTML = '';
+				const src = items[idx];
+				const isVideo = /\.(mp4|webm|ogg)$/i.test(src);
+				if (isVideo) {
+					const v = document.createElement('video');
+					v.controls = true;
+					v.playsInline = true;
+					v.setAttribute('playsinline','');
+					v.src = src;
+					mediaWrap.appendChild(v);
+				} else {
+					const img = document.createElement('img');
+					img.src = src;
+					img.alt = (card?.dataset.title || slug || 'media');
+					mediaWrap.appendChild(img);
+				}
+				prevBtn.style.display = items.length > 1 ? '' : 'none';
+				nextBtn.style.display = items.length > 1 ? '' : 'none';
+			}
+			const next = () => { idx = (idx + 1) % items.length; render(); };
+			const prev = () => { idx = (idx - 1 + items.length) % items.length; render(); };
+			nextBtn.addEventListener('click', next);
+			prevBtn.addEventListener('click', prev);
+			render();
+		}
+	}
 
 		const base = 'assets/audio/music/background/';
 		const FALLBACK = base + 'background-music-1.mp3';
