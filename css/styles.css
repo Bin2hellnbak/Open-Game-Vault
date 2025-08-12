@@ -1,3 +1,8 @@
+html, body {
+    height: 100%;
+}
+/* Use border-box to keep padding within declared widths (prevents mobile overflow) */
+*, *::before, *::after { box-sizing: border-box; }
 /* General Styles */
 body {
     margin: 0;
@@ -5,6 +10,12 @@ body {
     background-color: #121212;
     color: #ffffff;
     line-height: 1.6;
+    min-height: 100vh;         /* ensure full viewport height */
+    display: flex;             /* enable sticky footer layout */
+    flex-direction: column;
+    background-image: radial-gradient(1200px 600px at 50% -10%, rgba(0, 188, 212, 0.06), rgba(0,0,0,0) 60%),
+                      linear-gradient(#0f1116, #0c0d12 60%, #0f1116);
+    overflow-x: hidden;        /* guard against accidental horizontal scroll on mobile */
 }
 
 header {
@@ -12,6 +23,8 @@ header {
     padding: 20px;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
 }
 
 header h1 {
@@ -22,8 +35,19 @@ header h1 {
 
 main {
     padding: 20px;
-    max-width: 900px;
+    /* widen layout so game cards are larger on desktop */
+    max-width: 1200px;
+    width: 95vw;               /* responsive width on very large screens */
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    flex: 1 0 auto;            /* take remaining space to push footer down */
+    box-sizing: border-box;    /* include padding in width to avoid overflow */
+}
+
+/* cap width nicely on ultra-wide screens while keeping good gutters */
+@media (min-width: 1400px) {
+    main { width: 1280px; }
 }
 
 .game {
@@ -34,6 +58,7 @@ main {
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     transition: box-shadow 0.3s ease;
+    position: relative; /* allow absolute-positioned View button */
 }
 
 .game:hover {
@@ -43,10 +68,58 @@ main {
 .game h2 {
     margin-top: 0;
     color: #00bcd4;
+    padding-right: 140px; /* leave room for the top-right View button */
+}
+
+/* Title row with inline View button */
+.game-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 56px; /* button(36px) + top padding(20px) ensures 20px gap below button */
+    margin-bottom: 20px; /* gap above the cover equals card padding */
+}
+.game-header h2 {
+    margin: 0;
 }
 
 .game p {
     margin: 10px 0;
+}
+
+.game .view-btn {
+    position: absolute;
+    top: 20px;   /* matches .game padding */
+    right: 20px; /* matches .game padding i.e., same gap as cover */
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;            /* taller so (min-height 56 - 56) + 20 margin = 20px gap under */
+    padding: 0 14px;         /* keep horizontal padding */
+    line-height: 24px;
+    font-size: 16px;
+}
+
+/* Cover image on index (single large preview) */
+.cover {
+    margin-top: -1px; /* offset the cover's 1px top border so the visual gap equals the top gap */
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #0f0f0f;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+}
+
+.cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .game-buttons {
@@ -68,12 +141,29 @@ main {
     transform: scale(1.05);
 }
 
+/* Generic button style to match download buttons */
+.btn {
+    text-decoration: none !important;
+    color: #ffffff !important;
+    background-color: #00bcd4;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-block;
+}
+.btn:hover {
+    background-color: #008c9e;
+    transform: scale(1.05);
+}
+
 footer {
     text-align: center;
     padding: 10px;
     background-color: #1f1f1f;
     margin-top: 20px;
     box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
 }
 
 footer p {
@@ -87,12 +177,14 @@ footer p {
     display: flex;
     gap: 10px;
     margin-top: 15px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* single row preview */
+    overflow-x: hidden;  /* hide horizontal overflow */
+    overflow-y: visible; /* allow hover scale to show */
 }
 
 .gallery img {
-    width: 120px; /* Set a fixed width */
-    height: 120px; /* Set a fixed height */
+    width: var(--thumb-size, 120px); /* Dynamic width set by JS for perfect fit */
+    height: var(--thumb-size, 120px); /* Keep square */
     object-fit: cover; /* Ensures the image fits within the box while maintaining aspect ratio */
     border-radius: 5px;
     cursor: pointer;
@@ -101,6 +193,28 @@ footer p {
 
 .gallery img:hover {
     transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* '+N more' tile */
+.thumb-more {
+    width: var(--thumb-size, 120px);
+    height: var(--thumb-size, 120px);
+    border-radius: 5px;
+    background: #232323;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid #333;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.thumb-more:hover {
+    background: #2c2c2c;
+    transform: scale(1.05);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
@@ -115,7 +229,7 @@ footer p {
     background-color: rgba(0, 0, 0, 0.9);
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9999;
     flex-direction: column;
 }
 
@@ -147,15 +261,71 @@ footer p {
     color: #00bcd4;
 }
 
+/* Lightbox thumbnail strip */
+.lightbox .thumbs {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    max-width: 90%;
+    overflow-x: auto;
+    padding: 6px 8px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 8px;
+}
+
+.lightbox .thumbs::-webkit-scrollbar { height: 6px; }
+.lightbox .thumbs::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+.lightbox .thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    background: #111;
+    cursor: pointer;
+}
+
+.lightbox .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.lightbox .thumb.video::after {
+    content: "▶";
+    position: absolute;
+    color: #fff;
+    font-size: 18px;
+}
+
+.lightbox .thumb.active {
+    border-color: #00bcd4;
+}
+
 /* Search Box Styles */
 .search-container {
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;          /* allow wrapping on narrow screens */
+    gap: 8px;                 /* spacing when wrapped */
     margin: 20px 0;
+    width: 100%;              /* prevent overflow-caused background gap */
+    box-sizing: border-box;
 }
 
 #search-box {
-    width: 300px;
+    flex: 1 1 260px;          /* grow/shrink within container */
+    max-width: 520px;         /* cap on wide screens */
+    min-width: 0;             /* allow shrinking below content width */
     padding: 10px;
     border: 1px solid #333;
     border-radius: 5px 0 0 5px;
@@ -163,6 +333,7 @@ footer p {
     font-size: 1rem;
     background-color: #1e1e1e;
     color: #ffffff;
+    box-sizing: border-box;
 }
 
 #search-button {
@@ -174,10 +345,39 @@ footer p {
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    flex: 0 0 auto;           /* keep natural button size */
 }
 
 #search-button:hover {
     background-color: #008c9e;
+}
+
+/* Mobile: stack search input and button to avoid overflow and odd radii */
+@media (max-width: 480px) {
+    header { padding: 12px; }
+    header h1 { font-size: 1.6rem; }
+    .search-container {
+        flex-direction: row;    /* keep on one line to reduce height */
+        align-items: stretch;
+        flex-wrap: nowrap;
+        gap: 0;                 /* no extra width between input/button */
+        margin: 10px auto;      /* compact spacing */
+        max-width: 520px;       /* constrain so it fits on small phones */
+        width: 100%;
+    }
+    #search-box {
+        flex: 1 1 auto;
+        min-width: 0;           /* allow shrinking to avoid overflow */
+        border-radius: 5px 0 0 5px;
+        padding: 8px;           /* slimmer input height */
+        font-size: 1rem;        /* keep 16px to avoid zoom */
+    }
+    #search-button {
+        flex: 0 0 auto;
+        border-radius: 0 5px 5px 0;
+        padding: 8px 12px;      /* slimmer button height */
+        font-size: 1rem;
+    }
 }
 
 /* Remove underline and color change for links */
@@ -186,6 +386,111 @@ a {
     color: inherit; /* Inherits the color from the parent element */
 }
 
-a:hover {
-    color: #00bcd4; /* Optional: Add a hover effect for better interactivity */
+/* Optional hover: comment out to keep exact color */
+/* a:hover { color: #00bcd4; } */
+
+/* Visually-hidden (screen-reader only) utility */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Prevent background scroll when lightbox is open */
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* Larger click/tap targets for arrows */
+.lightbox .arrow {
+    padding: 12px 16px;
+}
+
+/* Starry sky overlay (only created on index via JS) */
+.starfield {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+.starfield .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: twinkle var(--twinkle-dur, 4s) ease-in-out infinite;
+}
+.starfield .star.big { width: 3px; height: 3px; opacity: 0.9; }
+.starfield .star.dim { opacity: 0.3; }
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+.starfield .shooting-star {
+    position: absolute;
+    width: 140px;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,1));
+    border-radius: 2px;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
+    opacity: 0.9;
+    transform-origin: 0 50%; /* rotate around the trail start so the bright head leads */
+    transform: rotate(var(--angle, -18deg)) translateX(0);
+    animation: shoot var(--shoot-dur, 1.6s) linear forwards;
+    will-change: transform, opacity;
+}
+
+@keyframes shoot {
+    0%   { transform: rotate(var(--angle, -18deg)) translateX(0); opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: rotate(var(--angle, -18deg)) translateX(130vw); opacity: 0; }
+}
+
+/* Small sound toggle for desktop autoplay fallback */
+.music-toggle {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 2;
+    padding: 8px 12px;
+    border-radius: 18px;
+    border: 1px solid #2e2e2e;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.music-toggle:hover {
+    background: rgba(0,0,0,0.7);
+    transform: translateY(-1px);
+    border-color: #444;
+}
+
+.music-hint {
+    position: fixed;
+    bottom: 58px;
+    right: 18px;
+    z-index: 2;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #2e2e2e;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
+    .music-toggle, .music-hint { display: none !important; }
 }

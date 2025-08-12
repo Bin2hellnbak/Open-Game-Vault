@@ -10,55 +10,51 @@
     <header>
         <h1>My Games Portfolio</h1>
         <div class="search-container">
-            <input type="text" id="search-box" placeholder="Search for a game...">
+            <input type="text" id="search-box" placeholder="Search for a game..." aria-label="Search games">
             <button id="search-button">Search</button>
         </div>
     </header>
     <main id="game-list">
-        <section class="game" data-title="Space Explorer">
-            <h2><a href="space-explorer.html">Space Explorer</a></h2>
-            <p>Embark on an intergalactic journey in Space Explorer. Navigate through asteroid fields, battle alien ships, and explore distant planets.</p>
-            <div class="gallery" data-game="space-explorer">
-                <img src="images/space-explorer-1.png" alt="Space Explorer Screenshot 1">
-                <img src="images/space-explorer-2.webp" alt="Space Explorer Screenshot 2">
-                <img src="images/space-explorer-3.jpg" alt="Space Explorer Screenshot 3">
+        <div id="results-status" class="sr-only" aria-live="polite"></div>
+        <div id="games-container">
+    <section class="game" id="space-explorer" data-title="Space Explorer" data-tags="space, shooter, sci-fi, arcade" data-folder="images/galleries/space-explorer">
+            <div class="game-header">
+                <h2><a href="space-explorer.html">Space Explorer</a></h2>
+                <a class="btn view-btn" href="space-explorer.html">View</a>
             </div>
-            <div class="game-buttons">
-                <a href="downloads/space-explorer-windows.7z" download>Download for Windows</a>
-                <a href="downloads/space-explorer-mac.zip" download>Download for Mac</a>
+            <div class="cover" data-game="space-explorer">
+                <img src="images/covers/space-explorer-cover.png" alt="Space Explorer cover" onerror="this.style.display='none'">
             </div>
-        </section>
-        <section class="game" data-title="Puzzle Master">
-            <h2><a href="puzzle-master.html">Puzzle Master</a></h2>
-            <p>Challenge your mind with Puzzle Master, a game filled with intricate puzzles and brain-teasing challenges.</p>
-            <div class="gallery" data-game="puzzle-master">
-                <img src="images/puzzle-master-1.jpg" alt="Puzzle Master Screenshot 1">
-                <img src="images/puzzle-master-2.jpg" alt="Puzzle Master Screenshot 2">
-                <img src="images/puzzle-master-3.jpg" alt="Puzzle Master Screenshot 3">
+    </section>
+    <section class="game" id="puzzle-master" data-title="Puzzle Master" data-tags="puzzle, logic, brain, casual" data-folder="images/galleries/puzzle-master">
+            <div class="game-header">
+                <h2><a href="puzzle-master.html">Puzzle Master</a></h2>
+                <a class="btn view-btn" href="puzzle-master.html">View</a>
             </div>
-            <div class="game-buttons">
-                <a href="downloads/puzzle-master-windows.zip" download>Download for Windows</a>
-                <a href="downloads/puzzle-master-mac.zip" download>Download for Mac</a>
+            <div class="cover" data-game="puzzle-master">
+                <img src="images/covers/puzzle-master-cover.png" alt="Puzzle Master cover" onerror="this.style.display='none'">
             </div>
-        </section>
-        <section class="game" data-title="Racing Thunder">
-            <h2><a href="racing-thunder.html">Racing Thunder</a></h2>
-            <p>Feel the adrenaline rush in Racing Thunder, a high-speed racing game with stunning visuals and intense gameplay.</p>
-            <div class="gallery" data-game="racing-thunder">
-                <img src="images/racing-thunder-1.jpg" alt="Racing Thunder Screenshot 1">
-                <img src="images/racing-thunder-2.jpg" alt="Racing Thunder Screenshot 2">
-                <img src="images/racing-thunder-3.jpg" alt="Racing Thunder Screenshot 3">
+    </section>
+    <section class="game" id="racing-thunder" data-title="Racing Thunder" data-tags="racing, cars, arcade, speed" data-folder="images/galleries/racing-thunder">
+            <div class="game-header">
+                <h2><a href="racing-thunder.html">Racing Thunder</a></h2>
+                <a class="btn view-btn" href="racing-thunder.html">View</a>
             </div>
-            <div class="game-buttons">
-                <a href="downloads/racing-thunder-windows.zip" download>Download for Windows</a>
-                <a href="downloads/racing-thunder-mac.zip" download>Download for Mac</a>
+            <div class="cover" data-game="racing-thunder">
+                <img src="images/covers/racing-thunder-cover.png" alt="Racing Thunder cover" onerror="this.style.display='none'">
             </div>
-        </section>
+    </section>
+    </div>
     </main>
     <footer>
         <p>&copy; 2025 My Games Portfolio. All rights reserved.</p>
     </footer>
-    <script src="js/gallery.js"></script>
+        <script>
+            // Mark this page as index so gallery.js can skip building inline galleries
+            document.documentElement.setAttribute('data-page', 'index');
+        </script>
+    <script src="js/script.js"></script>
+        <script src="js/gallery.js"></script>
     <script src="js/search.js"></script>
 </body>
 </html>
