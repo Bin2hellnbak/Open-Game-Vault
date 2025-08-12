@@ -205,17 +205,29 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Initialize icon immediately from saved preference
 		updateToggleLabel();
 		toggleEl.addEventListener('click', () => {
-			// Treat as explicit user gesture unlock
-			if (!unlocked) onFirstUserGesture();
-			// Toggle preference and reflect immediately
+			// Toggle preference first and reflect immediately
 			prefOn = !prefOn;
 			localStorage.setItem(PREF_KEY, prefOn ? 'on' : 'off');
 			updateToggleLabel();
+			// Treat as explicit user gesture unlock (after pref flip)
+			if (!unlocked) onFirstUserGesture();
 			if (prefOn) {
+				// Ensure we have a source and are playing
+				if (!audio.src) {
+					if (Array.isArray(tracks) && tracks.length > 0) {
+						playNext();
+					} else {
+						audio.src = FALLBACK;
+						audio.currentTime = 0;
+						audio.play().catch(() => {});
+					}
+				} else if (audio.paused) {
+					audio.play().catch(() => {});
+				}
 				audio.muted = false;
 				fadeTo(MAX_VOL);
 			} else {
-				fadeTo(0, () => { audio.muted = true; });
+				fadeTo(0, () => { audio.muted = true; audio.pause(); });
 			}
 		});
 		return toggleEl;
@@ -294,6 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Start something immediately (muted) so a quick first tap can unmute it on mobile
 	function bootstrapPlay() {
+		if (!prefOn) {
+			// Respect user's muted preference: don't start playback at all
+			return;
+		}
 		if (!audio.src) {
 			audio.src = FALLBACK;
 		}
@@ -323,8 +339,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		try {
 			audio.muted = false;
 			audio.volume = 0;
-			audio.play().then(() => {
-				fadeTo(MAX_VOL);
+				audio.play().then(() => {
+					// Mark as unlocked so future tracks don't re-mute
+					unlocked = true;
+					fadeTo(MAX_VOL);
 			}).catch(() => {
 				// Revert if not allowed
 				audio.muted = wasMuted;
@@ -348,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	audio.addEventListener('ended', () => {
+		if (!prefOn) { return; }
 		// If only one track, loop with fade-in at restart
 		if (tracks.length <= 1) {
 				audio.currentTime = 0;
@@ -381,11 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.removeEventListener('touchend', onFirstUserGesture);
 		document.removeEventListener('scroll', onFirstUserGesture);
 		document.removeEventListener('mousemove', onFirstUserGesture);
-		// Unmute and fade in to target volume
-		audio.muted = false;
-		fadeTo(MAX_VOL);
-		if (audio.paused) {
-			audio.play().catch(() => {});
+		// Only start/resume playback if user preference is ON
+		if (prefOn) {
+			audio.muted = false;
+			fadeTo(MAX_VOL);
+			if (audio.paused) {
+				audio.play().catch(() => {});
+			}
 		}
 		maybeShowToggle();
 	}
@@ -403,9 +424,32 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible' && !audio.paused) {
-			// Ensure we keep playing when tab becomes visible again
-			audio.play().catch(() => {});
+		if (document.visibilityState === 'visible' && prefOn) {
+			// Ensure we have a source ready, then resume promptly
+			if (!audio.src || (audio.readyState || 0) < 2) {
+				audio.src = FALLBACK;
+				audio.currentTime = 0;
+			}
+			if (audio.paused) {
+				audio.play().catch(() => {});
+			}
+			tryUnmuteIfAllowed();
+		}
+	});
+
+	// When returning via back/forward cache, resume quickly
+	window.addEventListener('pageshow', (e) => {
+		if (!isIndex) return;
+		if (prefOn) {
+			// Ensure a ready source and resume immediately
+			if (!audio.src || (audio.readyState || 0) < 2) {
+				audio.src = FALLBACK;
+				audio.currentTime = 0;
+			}
+			if (audio.paused) {
+				audio.play().catch(() => {});
+			}
+			tryUnmuteIfAllowed();
 		}
 	});
 
@@ -422,7 +466,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 			// If still empty, bail
 			if (!tracks.length) return;
-			playNext();
+			if (prefOn) {
+				playNext();
+			}
 			setTimeout(maybeShowToggle, 1000);
 		})();
 });

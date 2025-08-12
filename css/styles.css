@@ -20,7 +20,7 @@ body {
 
 header {
     /* Translucent glass effect over starry background (match card look) */
-    background-color: rgba(30, 30, 30, 0.12);
+    background-color: rgba(30, 30, 30, 0.09);
     -webkit-backdrop-filter: blur(12px) saturate(110%);
     backdrop-filter: blur(12px) saturate(110%);
     background-clip: padding-box;
@@ -39,7 +39,7 @@ header > *:not(.header-blur-proxy):not(.music-toggle) { position: relative; z-in
 
 /* Fallback for browsers that don’t support backdrop-filter: stay translucent so our JS blur proxy shows through */
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-    header { background-color: rgba(18, 18, 18, 0.12); }
+    header { background-color: rgba(18, 18, 18, 0.09); }
 }
 
 /* Header blur proxy (JS fallback when backdrop-filter is unavailable) */
@@ -106,7 +106,7 @@ main {
 
 .game {
     /* Glassy card */
-    background-color: rgba(30,30,30,0.12);
+    background-color: rgba(30,30,30,0.09);
     -webkit-backdrop-filter: blur(12px) saturate(110%);
     backdrop-filter: blur(12px) saturate(110%);
     background-clip: padding-box;
@@ -566,7 +566,7 @@ body.no-scroll {
 
 /* If no backdrop-filter support, keep translucency so proxy is visible */
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-    .game { background-color: rgba(30,30,30,0.12); }
+    .game { background-color: rgba(30,30,30,0.09); }
 }
 /* no text hover animation for icon button */
 
