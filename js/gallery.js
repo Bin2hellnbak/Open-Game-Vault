@@ -134,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     galleries.forEach(gallery => {
         if (isIndex) return; // skip inline gallery building on index page
         const gameSection = gallery.closest('.game');
-        const folder = gameSection?.dataset.folder; // e.g., images/space-explorer
+    const folder = gameSection?.dataset.folder; // e.g., assets/images/space-explorer
         const gameKey = gallery.dataset.game; // e.g., space-explorer
 
         // Collect images: start from any pre-existing imgs in DOM
@@ -160,12 +160,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderPreview(gallery, imgs);
                 wireClicks(gallery, imgs);
             } else if (gameKey) {
-                // Fallback: root images using pattern like images/space-explorer-1.jpg/png/webp
+                // Fallback: root images using pattern like assets/images/space-explorer-1.jpg/png/webp
                 const rootCandidates = [];
                 for (let i = 1; i <= 12; i++) {
-                    rootCandidates.push(`images/${gameKey}-${i}.jpg`);
-                    rootCandidates.push(`images/${gameKey}-${i}.png`);
-                    rootCandidates.push(`images/${gameKey}-${i}.webp`);
+                    rootCandidates.push(`assets/images/${gameKey}-${i}.jpg`);
+                    rootCandidates.push(`assets/images/${gameKey}-${i}.png`);
+                    rootCandidates.push(`assets/images/${gameKey}-${i}.webp`);
                 }
                 const rootLoaded = await probeAndGet(rootCandidates);
                 if (rootLoaded.length) {
@@ -264,9 +264,9 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (gameKey) {
                 const rootCandidates = [];
                 for (let i = 1; i <= 12; i++) {
-                    rootCandidates.push(`images/${gameKey}-${i}.jpg`);
-                    rootCandidates.push(`images/${gameKey}-${i}.png`);
-                    rootCandidates.push(`images/${gameKey}-${i}.webp`);
+                    rootCandidates.push(`assets/images/${gameKey}-${i}.jpg`);
+                    rootCandidates.push(`assets/images/${gameKey}-${i}.png`);
+                    rootCandidates.push(`assets/images/${gameKey}-${i}.webp`);
                 }
                 const rootLoaded = await probeAndGet(rootCandidates);
                 await finalize(rootLoaded);

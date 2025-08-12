@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	// For non-index pages, stop here (starfield only)
 	if (!isIndex) return;
 
-		const base = 'css/audio/music/background/';
+		const base = 'assets/audio/music/background/';
 		const FALLBACK = base + 'background-music-1.mp3';
 		const exts = ['mp3','ogg','webm','wav','m4a'];
 		const names = [];
