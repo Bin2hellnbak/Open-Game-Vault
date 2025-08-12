@@ -1,6 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
     const galleries = document.querySelectorAll(".gallery");
     const isIndex = document.documentElement.getAttribute('data-page') === 'index';
+    const isMobileLike = () => (
+        (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches)
+        || (window.innerWidth <= 600)
+    );
 
     // Create lightbox UI once
     const lightbox = document.createElement("div");
@@ -154,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         };
 
-        const finalize = async (loaded) => {
+    const finalize = async (loaded) => {
             if (loaded && loaded.length > 0) {
                 imgs = loaded;
                 renderPreview(gallery, imgs);
@@ -167,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     rootCandidates.push(`assets/images/${gameKey}-${i}.png`);
                     rootCandidates.push(`assets/images/${gameKey}-${i}.webp`);
                 }
-                const rootLoaded = await probeAndGet(rootCandidates);
+                const rootLoaded = await probeAndGet(isMobileLike() ? rootCandidates.slice(0, 9) : rootCandidates);
                 if (rootLoaded.length) {
                     imgs = rootLoaded;
                     renderPreview(gallery, imgs);
@@ -205,8 +209,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Try to discover images sequentially to avoid waiting for many 404s
         const findFolderImages = async (folderPath, key) => {
             const exts = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".mp4", ".webm", ".ogg"]; // order preference incl. video
-            const max = 30; // up to 30 images
+            const max = isMobileLike() ? 10 : 30; // fewer probes on mobile
             const loaded = [];
+            let misses = 0;
 
             const loadProbe = (src) => new Promise((resolve) => {
                 const test = new Image();
@@ -229,9 +234,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (res) { found = res; break; }
                     }
                 }
-                if (found) loaded.push(found);
-                // Early stop if we miss several in a row and already have some
-                if (!found && loaded.length >= 3 && i > 6) break;
+                if (found) {
+                    loaded.push(found);
+                    misses = 0;
+                } else {
+                    misses++;
+                }
+                // Early stop if we miss several in a row and already have some, or on mobile after a few misses with none found
+                if ((!found && loaded.length >= 3 && i > 6) || (isMobileLike() && loaded.length === 0 && misses >= 5)) break;
             }
             return loaded;
         };
@@ -242,6 +252,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 wireClicks(gallery, imgs);
                 return;
             }
+
+            // Show placeholder immediately so users see feedback while discovery runs
+            renderPreview(gallery, []);
 
             // Try manifest first
             const manifestImgs = await loadFromManifest();
@@ -273,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // If nothing found so far
+            // If nothing found so far, keep placeholder visible
             renderPreview(gallery, imgs);
             wireClicks(gallery, imgs);
         };
