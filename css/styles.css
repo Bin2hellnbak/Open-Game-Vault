@@ -19,18 +19,72 @@ body {
 }
 
 header {
-    background-color: #1f1f1f;
+    /* Translucent glass effect over starry background (match card look) */
+    background-color: rgba(30, 30, 30, 0.12);
+    -webkit-backdrop-filter: blur(12px) saturate(110%);
+    backdrop-filter: blur(12px) saturate(110%);
+    background-clip: padding-box;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     padding: 20px;
     text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     position: relative;
     z-index: 1;
 }
+/* Ensure header content sits above the internal blur proxy (exclude absolute-positioned music toggle) */
+header > *:not(.header-blur-proxy):not(.music-toggle) { position: relative; z-index: 1; }
+
+/* Make room on the right when the header contains the music toggle */
+/* No extra padding for the toggle; keep layout unchanged */
+
+/* Fallback for browsers that don’t support backdrop-filter: stay translucent so our JS blur proxy shows through */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    header { background-color: rgba(18, 18, 18, 0.12); }
+}
+
+/* Header blur proxy (JS fallback when backdrop-filter is unavailable) */
+.header-blur-proxy {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+    filter: blur(14px) saturate(120%);
+        z-index: 0;
+}
+.header-blur-proxy .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: #fff;
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: twinkle var(--twinkle-dur, 4s) ease-in-out infinite;
+}
+.header-blur-proxy .star.big { width: 3px; height: 3px; opacity: 0.9; }
+.header-blur-proxy .star.dim { opacity: 0.3; }
 
 header h1 {
     margin: 0;
     font-size: 2.5rem;
     color: #00bcd4;
+}
+
+/* Back-to-home button shown on non-index pages */
+header .back-link {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+}
+
+@media (max-width: 480px) {
+    /* On small screens, place the back button below the title to avoid overlap */
+    header .back-link {
+        position: static;
+        left: auto;
+        top: auto;
+        display: inline-flex;
+        margin-top: 8px;
+    }
 }
 
 main {
@@ -51,15 +105,22 @@ main {
 }
 
 .game {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
+    /* Glassy card */
+    background-color: rgba(30,30,30,0.12);
+    -webkit-backdrop-filter: blur(12px) saturate(110%);
+    backdrop-filter: blur(12px) saturate(110%);
+    background-clip: padding-box;
+    border: 1px solid rgba(255,255,255,0.06);
     border-radius: 8px;
     margin-bottom: 20px;
     padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
     transition: box-shadow 0.3s ease;
     position: relative; /* allow absolute-positioned View button */
 }
+/* Ensure card content sits above the internal blur proxy, but keep .game-header static so the View button anchors to the card */
+.game > *:not(.glass-blur-proxy):not(.game-header) { position: relative; z-index: 1; }
+.game-header { position: static; }
 
 .game:hover {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
@@ -457,26 +518,57 @@ body.no-scroll {
     100% { transform: rotate(var(--angle, -18deg)) translateX(130vw); opacity: 0; }
 }
 
-/* Small sound toggle for desktop autoplay fallback */
+/* Header sound toggle (icon-only) */
 .music-toggle {
-    position: fixed;
-    bottom: 18px;
-    right: 18px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
     z-index: 2;
-    padding: 8px 12px;
-    border-radius: 18px;
-    border: 1px solid #2e2e2e;
-    background: rgba(0,0,0,0.55);
-    color: #fff;
-    font-size: 0.9rem;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.45);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 70% 70%;
+    color: transparent;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
 }
-.music-toggle:hover {
-    background: rgba(0,0,0,0.7);
-    transform: translateY(-1px);
-    border-color: #444;
+.music-toggle.on { background-image: url('../assets/images/icons/music-playing.png'); }
+.music-toggle.off { background-image: url('../assets/images/icons/music-muted.png'); }
+.music-toggle:hover { border-color: rgba(255,255,255,0.22); }
+.music-toggle:focus { outline: none; }
+.music-toggle { -webkit-tap-highlight-color: transparent; }
+
+/* Generic glass blur proxy used as a JS fallback when backdrop-filter isn't supported */
+.glass-blur-proxy, .header-blur-proxy {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+    filter: blur(14px) saturate(120%);
+        z-index: 0;
 }
+.glass-blur-proxy .star, .header-blur-proxy .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: #fff;
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: twinkle var(--twinkle-dur, 4s) ease-in-out infinite;
+}
+.glass-blur-proxy .star.big, .header-blur-proxy .star.big { width: 3px; height: 3px; opacity: 0.9; }
+.glass-blur-proxy .star.dim, .header-blur-proxy .star.dim { opacity: 0.3; }
+
+/* If no backdrop-filter support, keep translucency so proxy is visible */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .game { background-color: rgba(30,30,30,0.12); }
+}
+/* no text hover animation for icon button */
 
 .music-hint {
     position: fixed;
@@ -492,5 +584,18 @@ body.no-scroll {
 }
 
 @media (max-width: 600px), (hover: none) and (pointer: coarse) {
-    .music-toggle, .music-hint { display: none !important; }
+    /* Keep hint hidden on mobile; show the header toggle */
+    .music-hint { display: none !important; }
+    /* Performance: avoid GPU-heavy blur on mobile while keeping translucent look */
+    header, .game {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    /* Simple non-blurred 50% opacity on mobile */
+    background-color: rgba(30,30,30,0.50) !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+    /* Soften shooting star effects on mobile */
+    .starfield .shooting-star { filter: none; width: 100px; }
+    /* Slow twinkle to reduce animation work */
+    .starfield .star { animation-duration: 8s !important; }
 }

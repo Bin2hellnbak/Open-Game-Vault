@@ -8,14 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		const sf = document.createElement('div');
 		sf.className = 'starfield';
 		document.body.appendChild(sf);
-		const count = 140; // number of stars
+		const isMobile = matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth <= 600;
+		const count = isMobile ? 80 : 140; // fewer stars on mobile
 		for (let i = 0; i < count; i++) {
 			const s = document.createElement('div');
 			s.className = 'star';
 			if (Math.random() < 0.12) s.classList.add('big');
 			if (Math.random() < 0.25) s.classList.add('dim');
-			s.style.left = Math.random() * 100 + 'vw';
-			s.style.top = Math.random() * 100 + 'vh';
+			const left = Math.random() * 100;
+			const top = Math.random() * 100;
+			s.style.left = left + 'vw';
+			s.style.top = top + 'vh';
 			s.style.setProperty('--twinkle-dur', (3 + Math.random() * 4).toFixed(2) + 's');
 			sf.appendChild(s);
 		}
@@ -56,6 +59,49 @@ document.addEventListener('DOMContentLoaded', () => {
 			setTimeout(shoot, 6000 + Math.random() * 8000);
 		}
 		setTimeout(shoot, 2000 + Math.random() * 6000);
+
+		// If no backdrop-filter support, insert a blurred proxy star layer inside the header
+		try {
+			const supportsBF = CSS && (CSS.supports('backdrop-filter: blur(1px)') || CSS.supports('-webkit-backdrop-filter: blur(1px)'));
+			if (!supportsBF && !isMobile) { // skip proxies on mobile for performance
+				const header = document.querySelector('header');
+				if (header) {
+					const proxy = document.createElement('div');
+					proxy.className = 'header-blur-proxy';
+					header.insertBefore(proxy, header.firstChild);
+					for (let i = 0; i < 80; i++) {
+						const st = document.createElement('div');
+						st.className = 'star';
+						if (Math.random() < 0.12) st.classList.add('big');
+						if (Math.random() < 0.25) st.classList.add('dim');
+						st.style.left = Math.random() * 100 + '%';
+						st.style.top = Math.random() * 100 + '%';
+						st.style.setProperty('--twinkle-dur', (3 + Math.random() * 4).toFixed(2) + 's');
+						proxy.appendChild(st);
+					}
+				}
+
+				// Also add proxies inside each .game card
+				const cards = document.querySelectorAll('.game');
+				cards.forEach(card => {
+					// Skip if there's already a proxy
+					if (card.querySelector('.glass-blur-proxy')) return;
+					const proxy = document.createElement('div');
+					proxy.className = 'glass-blur-proxy';
+					card.insertBefore(proxy, card.firstChild);
+					for (let i = 0; i < 36; i++) {
+						const st = document.createElement('div');
+						st.className = 'star';
+						if (Math.random() < 0.12) st.classList.add('big');
+						if (Math.random() < 0.25) st.classList.add('dim');
+						st.style.left = Math.random() * 100 + '%';
+						st.style.top = Math.random() * 100 + '%';
+						st.style.setProperty('--twinkle-dur', (3 + Math.random() * 4).toFixed(2) + 's');
+						proxy.appendChild(st);
+					}
+				});
+			}
+		} catch {}
 	})();
 
 	// For non-index pages, stop here (starfield only)
@@ -135,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	let fadeTimer = null;
 	let unlocked = false; // moved up so other functions can check it
 
-	// Simple sound toggle UI (index only)
+	// Simple sound toggle UI (index only) — placed in header top-right
 	let toggleEl = null;
 	let hintEl = null;
 	let hintShown = false;
@@ -145,35 +191,43 @@ document.addEventListener('DOMContentLoaded', () => {
 		toggleEl = document.createElement('button');
 		toggleEl.className = 'music-toggle';
 		toggleEl.type = 'button';
-		toggleEl.textContent = 'Sound: Off';
+	// Icon-only; use classes for on/off images
 		toggleEl.setAttribute('aria-pressed', 'false');
-		// Always visible on index; we'll update label/state
-		toggleEl.style.display = 'block';
+		// Insert into header (top-right)
+		const header = document.querySelector('header');
+		if (header) {
+			header.appendChild(toggleEl);
+			header.classList.add('has-music-toggle');
+		} else {
+			// Fallback to body if header missing
+			document.body.appendChild(toggleEl);
+		}
+		// Initialize icon immediately from saved preference
+		updateToggleLabel();
 		toggleEl.addEventListener('click', () => {
 			// Treat as explicit user gesture unlock
 			if (!unlocked) onFirstUserGesture();
-			// Toggle mute state
-			const turningOn = audio.muted || audio.volume < 0.01;
-			audio.muted = !turningOn;
-			if (turningOn) {
+			// Toggle preference and reflect immediately
+			prefOn = !prefOn;
+			localStorage.setItem(PREF_KEY, prefOn ? 'on' : 'off');
+			updateToggleLabel();
+			if (prefOn) {
+				audio.muted = false;
 				fadeTo(MAX_VOL);
-				updateToggleLabel();
-				prefOn = true; localStorage.setItem(PREF_KEY, 'on');
 			} else {
 				fadeTo(0, () => { audio.muted = true; });
-				updateToggleLabel();
-				prefOn = false; localStorage.setItem(PREF_KEY, 'off');
 			}
 		});
-		document.body.appendChild(toggleEl);
 		return toggleEl;
 	}
 
 	function updateToggleLabel() {
 		if (!toggleEl) return;
-		const on = !audio.muted && audio.volume > 0.01;
-		toggleEl.textContent = on ? 'Sound: On' : 'Sound: Off';
-		toggleEl.setAttribute('aria-pressed', on ? 'true' : 'false');
+	const on = !!prefOn;
+	toggleEl.classList.toggle('on', on);
+	toggleEl.classList.toggle('off', !on);
+	toggleEl.setAttribute('aria-pressed', on ? 'true' : 'false');
+	toggleEl.setAttribute('aria-label', on ? 'Sound on' : 'Sound off');
 	}
 
 	function showHintOnce() {
@@ -285,7 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	// Show the toggle if autoplay remains muted after a short delay (typical desktop policy)
 	function maybeShowToggle(autoplayBlocked = false) {
 		if (!isIndex) return;
-			if (isMobileLike()) return; // keep mobile UI clean; no toggle on mobile
 		ensureMusicToggle();
 		updateToggleLabel();
 		// Always show the toggle; optionally show a brief hint when blocked and preference is on
@@ -357,6 +410,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	});
 
 			(async () => {
+			// Create the toggle immediately so it appears instantly
+			ensureMusicToggle();
+			updateToggleLabel();
 			// Request unlock listeners ASAP and attempt a muted fallback right away
 			bootstrapPlay();
 				tracks = await discoverTracks();
