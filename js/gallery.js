@@ -364,7 +364,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderPreview(gallery, imgs) {
         gallery.innerHTML = "";
-        if (!imgs || imgs.length === 0) return;
+        if (!imgs || imgs.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'gallery-empty';
+            empty.textContent = 'No images added yet';
+            gallery.appendChild(empty);
+            return;
+        }
 
         // Compute how many thumbnails fit in gallery width and set exact size to avoid right gap
         const baseThumb = 120; // reference size for estimating count

@@ -10,6 +10,63 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.body.appendChild(sf);
 		const isMobile = matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth <= 600;
 		const count = isMobile ? 80 : 140; // fewer stars on mobile
+		// Add a few faint spiral galaxies on desktop only
+		if (!isMobile) {
+			const galaxyCount = 2 + Math.floor(Math.random() * 2); // 2-3 galaxies
+			for (let g = 0; g < galaxyCount; g++) {
+				const gal = document.createElement('div');
+				gal.className = 'galaxy';
+				// random size and position
+				const size = 44 + Math.random() * 28; // vmin
+				const left = Math.random() * 100; // vw
+				const top = Math.random() * 100;  // vh
+				gal.style.width = size + 'vmin';
+				gal.style.height = size + 'vmin';
+				gal.style.left = left + 'vw';
+				gal.style.top = top + 'vh';
+				gal.style.transform = `translate(-50%, -50%) rotate(${(Math.random()*60-30).toFixed(1)}deg)`;
+				// choose a cool or warm palette
+				const cool = Math.random() < 0.55;
+				const c1 = cool ? 'rgba(150,190,255,0.18)' : 'rgba(255,190,190,0.18)'; // core tint
+				const armA1 = cool ? 'rgba(150,210,255,0.18)' : 'rgba(255,160,170,0.18)';
+				const armA0 = cool ? 'rgba(150,210,255,0.00)' : 'rgba(255,160,170,0.00)';
+				const armB1 = cool ? 'rgba(210,200,255,0.16)' : 'rgba(255,200,170,0.16)';
+				const armB0 = cool ? 'rgba(210,200,255,0.00)' : 'rgba(255,200,170,0.00)';
+				// build background with radial core + two conic arms layers
+				gal.style.background = [
+					`radial-gradient(circle at 50% 50%, ${c1} 0%, rgba(255,255,255,0.00) 62%)`,
+					`conic-gradient(from ${(-25 + Math.random()*50).toFixed(0)}deg at 50% 50%,
+						${armA0} 0deg,
+						${armA1} 12deg,
+						${armA0} 28deg,
+						${armA1} 64deg,
+						${armA0} 86deg,
+						${armA1} 128deg,
+						${armA0} 148deg,
+						${armA1} 196deg,
+						${armA0} 216deg,
+						${armA1} 268deg,
+						${armA0} 288deg,
+						transparent 360deg
+					)`,
+					`conic-gradient(from ${( -10 + Math.random()*20).toFixed(0)}deg at 50% 50%,
+						${armB0} 0deg,
+						${armB1} 10deg,
+						${armB0} 28deg,
+						${armB1} 60deg,
+						${armB0} 82deg,
+						${armB1} 120deg,
+						${armB0} 142deg,
+						${armB1} 190deg,
+						${armB0} 210deg,
+						${armB1} 260deg,
+						${armB0} 282deg,
+						transparent 360deg
+					)`
+				].join(',');
+				sf.appendChild(gal);
+			}
+		}
 		for (let i = 0; i < count; i++) {
 			const s = document.createElement('div');
 			s.className = 'star';
@@ -102,6 +159,22 @@ document.addEventListener('DOMContentLoaded', () => {
 				});
 			}
 		} catch {}
+	})();
+
+	// Mark covers with missing or broken images so a placeholder message shows
+	(function initCoverPlaceholders(){
+		const covers = document.querySelectorAll('.cover');
+		covers.forEach(cov => {
+			const img = cov.querySelector('img');
+			const markEmpty = () => {
+				cov.classList.add('empty');
+				if (img) img.style.display = 'none';
+			};
+			if (!img) { markEmpty(); return; }
+			if (!img.getAttribute('src')) { markEmpty(); return; }
+			if (img.complete && img.naturalWidth === 0) { markEmpty(); return; }
+			img.addEventListener('error', markEmpty, { once: true });
+		});
 	})();
 
 	// For non-index pages, stop here (starfield only)
