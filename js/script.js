@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	const FADE_INTERVAL_MS = 120; // smoothness
 	const FADE_DURATION_MS = 2000; // fade length
-	const MAX_VOL = 0.2; // cap overall volume at 20%
+	const MAX_VOL = 0.1; // cap overall volume at 10%
 	const PREF_KEY = 'sound-pref'; // 'on' | 'off'
 	const isMobileLike = () => (
 		window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
