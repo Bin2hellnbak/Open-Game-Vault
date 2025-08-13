@@ -93,9 +93,46 @@
           tagWrap.className = 'tags';
           tagWrap.setAttribute('aria-label','Tags');
           tagWrap.innerHTML = game.tags.map(t => `<span class="tag">${t}</span>`).join('');
-          details.insertBefore(tagWrap, details.querySelector('h2:nth-of-type(2)')); // before Gallery heading
+          // Insert a dedicated Tags heading right after the About description
+          const desc = document.getElementById('game-description');
+          let tagsHeading = details.querySelector('h2.tags-heading');
+          if (!tagsHeading) {
+            tagsHeading = document.createElement('h2');
+            tagsHeading.textContent = 'Tags';
+            tagsHeading.className = 'tags-heading';
+            if (desc) desc.insertAdjacentElement('afterend', tagsHeading); else details.insertBefore(tagsHeading, details.querySelector('h2:nth-of-type(2)'));
+          }
+          tagsHeading.insertAdjacentElement('afterend', tagWrap);
           // Add data-tags for consistency (not used on details page search currently)
           details.dataset.tags = game.tags.join(',');
+        }
+      }
+      // Links section (appears only if links exist). Insert after Gallery section.
+      if (game.links && typeof game.links === 'object') {
+        const links = Object.entries(game.links).filter(([k,v]) => typeof v === 'string' && v.trim());
+        if (links.length) {
+          const details = document.getElementById('game-details');
+          const galleryEl = document.getElementById('game-gallery');
+          if (details && galleryEl && !details.querySelector('.external-links')) {
+            const linksHeading = document.createElement('h2');
+            linksHeading.textContent = 'Links';
+            const container = document.createElement('div');
+            container.className = 'external-links';
+            links.forEach(([key,url]) => {
+              const btn = document.createElement('a');
+              btn.className = 'btn external-link';
+              btn.href = url;
+              btn.target = '_blank';
+              btn.rel = 'noopener noreferrer';
+              // Format key (steam -> Steam)
+              const label = key.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+              btn.textContent = label;
+              container.appendChild(btn);
+            });
+            // Insert after gallery element
+            galleryEl.insertAdjacentElement('afterend', container);
+            galleryEl.insertAdjacentElement('afterend', linksHeading);
+          }
         }
       }
   // No features anymore; description-only

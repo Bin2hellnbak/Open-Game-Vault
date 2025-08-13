@@ -50,12 +50,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Active tag filters (Set of lowercase tag names)
     const activeTags = new Set();
     const TAG_PARAM = 'tags';
+    const STORAGE_Q = 'ogv:search:q';
+    const STORAGE_TAGS = 'ogv:search:tags';
 
     function syncURL(query) {
         const url = new URL(window.location);
         if (query) url.searchParams.set('q', query); else url.searchParams.delete('q');
         if (activeTags.size) url.searchParams.set(TAG_PARAM, Array.from(activeTags).join(',')); else url.searchParams.delete(TAG_PARAM);
         window.history.replaceState({}, '', url);
+        // Persist state (session-based so a fresh tab starts clean)
+        try {
+            if (query) sessionStorage.setItem(STORAGE_Q, query); else sessionStorage.removeItem(STORAGE_Q);
+            if (activeTags.size) sessionStorage.setItem(STORAGE_TAGS, Array.from(activeTags).join(',')); else sessionStorage.removeItem(STORAGE_TAGS);
+        } catch {}
     }
 
     function parseURLState() {
@@ -264,14 +271,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function runInitial() {
         const q = parseURLState();
+        // If no URL params, restore from sessionStorage
+        try {
+            if (!q) {
+                const storedQ = sessionStorage.getItem(STORAGE_Q);
+                if (storedQ) searchBox.value = storedQ;
+            }
+            if (!activeTags.size) {
+                const storedTags = sessionStorage.getItem(STORAGE_TAGS);
+                if (storedTags) storedTags.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>activeTags.add(t));
+            }
+        } catch {}
     buildFilterMenu();
     updateFilterToggleState();
-        if (q) {
-            searchBox.value = q;
-            searchGames();
-        } else {
-            applyStagger();
-        }
+        if (searchBox.value || activeTags.size) { searchGames(); } else { applyStagger(); }
     }
 
     // Run once now and again after games are (re)rendered

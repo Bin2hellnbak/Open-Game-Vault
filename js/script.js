@@ -19,9 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
 		sf.className = 'starfield';
 		document.body.appendChild(sf);
 		const isMobile = matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth <= 600;
-		const count = isMobile ? 80 : 140; // fewer stars on mobile
+		const prefersReduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (prefersReduce) { try { document.body.classList.add('reduced-motion'); } catch {}
+		}
+		// Heuristic device memory (Chromium only); treat <=4GB as lower capability
+		let lowMem = false;
+		try { if (navigator.deviceMemory && navigator.deviceMemory <= 4) lowMem = true; } catch {}
+		// Base star count decisions
+		let count = 140;
+		if (isMobile) count = 50;            // lower baseline for mobile
+		if (lowMem) count = Math.min(count, 48);
+		if (prefersReduce) count = Math.min(count, 36);
 		// Add a few faint spiral galaxies on desktop only
-		if (!isMobile) {
+		if (!isMobile && !lowMem && !prefersReduce) {
 			const galaxyCount = 2 + Math.floor(Math.random() * 2); // 2-3 galaxies
 			for (let g = 0; g < galaxyCount; g++) {
 				const gal = document.createElement('div');
@@ -89,43 +99,26 @@ document.addEventListener('DOMContentLoaded', () => {
 			s.style.setProperty('--twinkle-dur', (3 + Math.random() * 4).toFixed(2) + 's');
 			sf.appendChild(s);
 		}
-		// Shooting stars occasionally
-		function shoot() {
-			const sh = document.createElement('div');
-			sh.className = 'shooting-star';
-			// Spawn from a random edge and aim inward at a varied angle
-			const edge = Math.floor(Math.random() * 4); // 0:left,1:right,2:top,3:bottom
-			let angleDeg = 0;
-			if (edge === 0) { // left -> right-ish
-				sh.style.left = (-20 - Math.random() * 20) + 'vw';
-				sh.style.top = (Math.random() * 100) + 'vh';
-				angleDeg = (Math.random() * 90) - 45; // -45..45
-			} else if (edge === 1) { // right -> left-ish
-				sh.style.left = (120 + Math.random() * 20) + 'vw';
-				sh.style.top = (Math.random() * 100) + 'vh';
-				angleDeg = 180 + (Math.random() * 90 - 45); // 135..225
-			} else if (edge === 2) { // top -> down-ish
-				sh.style.left = (Math.random() * 100) + 'vw';
-				sh.style.top = (-20 - Math.random() * 20) + 'vh';
-				angleDeg = 90 + (Math.random() * 90 - 45); // 45..135
-			} else { // bottom -> up-ish
-				sh.style.left = (Math.random() * 100) + 'vw';
-				sh.style.top = (120 + Math.random() * 20) + 'vh';
-				angleDeg = -90 + (Math.random() * 90 - 45); // -135..-45
+		// Shooting stars (skip entirely for mobile / reduced motion / low mem)
+		if (!isMobile && !prefersReduce && !lowMem) {
+			function shoot() {
+				const sh = document.createElement('div');
+				sh.className = 'shooting-star';
+				const edge = Math.floor(Math.random() * 4);
+				let angleDeg = 0;
+				if (edge === 0) { sh.style.left = (-20 - Math.random()*20) + 'vw'; sh.style.top = (Math.random()*100) + 'vh'; angleDeg = (Math.random()*90)-45; }
+				else if (edge === 1) { sh.style.left = (120 + Math.random()*20) + 'vw'; sh.style.top = (Math.random()*100) + 'vh'; angleDeg = 180 + (Math.random()*90 -45); }
+				else if (edge === 2) { sh.style.left = (Math.random()*100) + 'vw'; sh.style.top = (-20 - Math.random()*20) + 'vh'; angleDeg = 90 + (Math.random()*90 -45); }
+				else { sh.style.left = (Math.random()*100) + 'vw'; sh.style.top = (120 + Math.random()*20) + 'vh'; angleDeg = -90 + (Math.random()*90 -45); }
+				sh.style.setProperty('--angle', angleDeg + 'deg');
+				const dur = (2.4 + Math.random() * 1.8).toFixed(2); // slightly shorter range
+				sh.style.setProperty('--shoot-dur', dur + 's');
+				sf.appendChild(sh);
+				setTimeout(() => sh.remove(), (parseFloat(dur) * 1000) + 400);
+				setTimeout(shoot, 8000 + Math.random() * 8000); // fewer occurrences
 			}
-			sh.style.setProperty('--angle', angleDeg + 'deg');
-			const baseDur = 2.4 + Math.random() * 2.8; // current speed range
-			// Sometimes speed up to 50% faster (i.e., duration reduced by up to 50%)
-			const applySpeedUp = Math.random() < 0.6; // ~60% chance to be faster
-			const speedFactor = applySpeedUp ? (1 - Math.random() * 0.5) : 1; // 0.5..1.0
-			const dur = (baseDur * speedFactor).toFixed(2);
-			sh.style.setProperty('--shoot-dur', dur + 's');
-			sf.appendChild(sh);
-			setTimeout(() => sh.remove(), (parseFloat(dur) * 1000) + 600);
-			// Next shooting star after 6–14s
-			setTimeout(shoot, 6000 + Math.random() * 8000);
+			setTimeout(shoot, 4000 + Math.random() * 6000);
 		}
-		setTimeout(shoot, 2000 + Math.random() * 6000);
 
 		// If no backdrop-filter support, insert a blurred proxy star layer inside the header
 		try {

@@ -50,6 +50,16 @@ header > *:not(.header-blur-proxy):not(.music-toggle) { position: relative; z-in
 
 /* Make room on the right when the header contains the music toggle */
 /* No extra padding for the toggle; keep layout unchanged */
+/* (Removed stray closing brace) */
+
+/* Reduced motion adjustments (will be applied if body has .reduced-motion) */
+body.reduced-motion .starfield .star,
+body.reduced-motion .starfield .star.s2,
+body.reduced-motion .starfield .star.s3 {
+    animation-duration: 12s !important;
+    animation-iteration-count: 1 !important;
+}
+body.reduced-motion .shooting-star { display: none !important; }
 
 /* Fallback for browsers that don’t support backdrop-filter: stay translucent so our JS blur proxy shows through */
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
@@ -173,11 +183,44 @@ main {
 
 /* Tag pills under each game card */
 .game .tags {
-    margin-top: 12px;
+    /* Balanced vertical rhythm: same gap above/below relative headings */
+    margin-top: 10px; /* matches default paragraph top margin for harmony */
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
+.game h2.tags-heading {
+    /* Ensure consistent spacing: heading has margin-top inherited (0 for first), we add bottom to mirror next gap */
+    margin-top: 16px; /* space after description */
+    margin-bottom: 8px; /* gap between heading and tag pills */
+}
+/* Reduce extra space before Gallery after tags to keep symmetry */
+.game h2 + .tags + h2 { /* Gallery heading following tags */
+    margin-top: 20px; /* standard section gap */
+}
+/* External links section under Gallery */
+.game .external-links {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.game .external-links .external-link {
+    background: linear-gradient(135deg, rgba(0,188,212,0.25), rgba(33,150,243,0.25));
+    border: 1px solid rgba(0,188,212,0.4);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    color: #fff;
+    line-height: 1.1;
+    transition: background-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+.game .external-links .external-link:hover {
+    background: linear-gradient(135deg, rgba(0,188,212,0.45), rgba(33,150,243,0.45));
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.game .external-links .external-link:active { transform: translateY(1px); }
 .game .tag {
     font-size: 0.65rem;
     letter-spacing: .5px;

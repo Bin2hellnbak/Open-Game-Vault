@@ -2,16 +2,28 @@
   "doom-dark-ages": {
     "name": "DOOM: The Dark Ages",
   "description": "BECOME THE SLAYER IN A MEDIEVAL WAR AGAINST HELL, DOOM: The Dark Ages is the prequel to the critically acclaimed DOOM (2016) and DOOM Eternal that tells an epic cinematic story worthy of the DOOM Slayer’s legend. In this third installment of the modern DOOM series, players will step into the blood-stained boots of the DOOM Slayer, in this never-before-seen dark and sinister medieval war against Hell.",
-  "tags": ["singleplayer", "shooter", "fast-paced"]
+  "tags": ["singleplayer", "shooter", "fast-paced"],
+  "links": {
+    "home": "https://doom.bethesda.net/en-EU/the-dark-ages",
+    "steam": "https://store.steampowered.com/app/3017860/DOOM_The_Dark_Ages/"
+  }
   },
   "fallout4": {
     "name": "Fallout 4",
   "description": "As the sole survivor of Vault 111, you enter a world destroyed by nuclear war. Every second is a fight for survival, and every choice is yours. Only you can rebuild and determine the fate of the Wasteland. Welcome home.",
-  "tags": ["singleplayer", "rpg", "open-world"]
+  "tags": ["singleplayer", "rpg", "open-world"],
+  "links": {
+    "home": "https://fallout.bethesda.net/en/games/fallout-4",
+    "steam": "https://store.steampowered.com/app/377160/Fallout_4/"
+  }
   },
   "satisfactory": {
     "name": "Satisfactory",
   "description": "Satisfactory is a first-person open-world factory building game with a dash of exploration and combat. Play alone or with friends, explore an alien planet, create multi-story factories, and enter conveyor belt heaven!",
-  "tags": ["singleplayer", "multiplayer", "coop", "factory", "building"]
+  "tags": ["singleplayer", "multiplayer", "coop", "factory", "building"],
+  "links": {
+    "home": "https://www.satisfactorygame.com/",
+    "steam": "https://store.steampowered.com/app/526870/Satisfactory/"
+  }
   }
 }
