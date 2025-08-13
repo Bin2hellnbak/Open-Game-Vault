@@ -10,6 +10,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const snapshotGames = () => { allGames = Array.from(gamesContainer.querySelectorAll('.game')); };
     const status = document.getElementById("results-status");
 
+    // Sorting state (alphabetical by title)
+    let sortMode = null; // 'asc' | 'desc' | null
+    const SORT_PARAM = 'sort';
+    const STORAGE_SORT = 'ogv:search:sort';
+
     const score = (text, q) => {
         if (!q) return 0;
         if (text === q) return 5;
@@ -57,11 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const url = new URL(window.location);
         if (query) url.searchParams.set('q', query); else url.searchParams.delete('q');
         if (activeTags.size) url.searchParams.set(TAG_PARAM, Array.from(activeTags).join(',')); else url.searchParams.delete(TAG_PARAM);
+        if (sortMode) url.searchParams.set(SORT_PARAM, sortMode); else url.searchParams.delete(SORT_PARAM);
         window.history.replaceState({}, '', url);
         // Persist state (session-based so a fresh tab starts clean)
         try {
             if (query) sessionStorage.setItem(STORAGE_Q, query); else sessionStorage.removeItem(STORAGE_Q);
             if (activeTags.size) sessionStorage.setItem(STORAGE_TAGS, Array.from(activeTags).join(',')); else sessionStorage.removeItem(STORAGE_TAGS);
+            if (sortMode) sessionStorage.setItem(STORAGE_SORT, sortMode); else sessionStorage.removeItem(STORAGE_SORT);
         } catch {}
     }
 
@@ -71,6 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const tagStr = params.get(TAG_PARAM);
         activeTags.clear();
         if (tagStr) tagStr.split(',').map(t => t.trim().toLowerCase()).filter(Boolean).forEach(t => activeTags.add(t));
+    const s = params.get(SORT_PARAM);
+    sortMode = (s === 'asc' || s === 'desc') ? s : null;
         return q;
     }
 
@@ -102,17 +111,61 @@ document.addEventListener("DOMContentLoaded", () => {
             grid.appendChild(btn);
         });
         filterMenu.appendChild(grid);
-        const actions = document.createElement('div');
-        actions.className = 'filter-actions';
+
+        // Sorting section
+        // Insert Clear Filters button directly under tag grid (before sorting)
+        const tagActions = document.createElement('div');
+        tagActions.className = 'filter-actions';
         const clearBtn = document.createElement('button');
         clearBtn.type = 'button';
         clearBtn.className = 'clear-filters-btn';
         clearBtn.textContent = 'Clear Filters';
         clearBtn.disabled = activeTags.size === 0;
         clearBtn.addEventListener('click', () => { activeTags.clear(); searchGames(); buildFilterMenu(); updateFilterToggleState(); });
-        actions.appendChild(clearBtn);
-        filterMenu.appendChild(actions);
+        tagActions.appendChild(clearBtn);
+        filterMenu.appendChild(tagActions);
+
+        // Sorting section (uses same heading style as Filters h3)
+        const sortSection = document.createElement('div');
+        sortSection.className = 'filter-sort-section';
+        const sortHeading = document.createElement('h3');
+        sortHeading.textContent = 'Sorting';
+        sortSection.appendChild(sortHeading);
+        // Sorting mode buttons (future-proof for other modes like date)
+        const sortModeWrap = document.createElement('div');
+        sortModeWrap.className = 'sort-modes';
+        const alphaBtn = document.createElement('button');
+        alphaBtn.type = 'button';
+        alphaBtn.className = 'filter-tag sort-mode';
+        alphaBtn.textContent = 'Alphabetical';
+        // Only mode currently; always active visually
+        alphaBtn.classList.add('active');
+        sortModeWrap.appendChild(alphaBtn);
+        sortSection.appendChild(sortModeWrap);
+        // Asc / Desc controls
+        const orderWrap = document.createElement('div');
+        orderWrap.className = 'sort-btns';
+        ['asc','desc'].forEach(mode => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'filter-tag sort-option';
+            b.dataset.sort = mode;
+            b.textContent = mode === 'asc' ? '↑' : '↓';
+            b.setAttribute('aria-label', mode === 'asc' ? 'Sort ascending' : 'Sort descending');
+            if ((sortMode || 'asc') === mode) b.classList.add('active');
+            b.addEventListener('click', () => { setSortMode(mode); });
+            orderWrap.appendChild(b);
+        });
+        sortSection.appendChild(orderWrap);
+        filterMenu.appendChild(sortSection);
         filterMenu.scrollTop = hadScroll; // preserve scroll
+    }
+
+    function setSortMode(mode) {
+    // Null disables; otherwise set new mode (default to 'asc' when enabling without explicit value)
+    if (!mode) sortMode = null; else sortMode = mode;
+        searchGames();
+        buildFilterMenu();
     }
 
     function toggleTag(tag) {
@@ -126,6 +179,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!filterToggle) return;
         filterToggle.classList.toggle('has-filters', activeTags.size > 0);
         if (filterToggle.getAttribute('aria-expanded') === 'true') filterToggle.setAttribute('aria-expanded','true');
+    }
+
+    function highlightMatchingTags() {
+        // Highlight tags in each game that match active filter tags
+        if (!gamesContainer) return;
+        const cards = gamesContainer.querySelectorAll('.game');
+        cards.forEach(card => {
+            const tagsEl = card.querySelectorAll('.tag');
+            tagsEl.forEach(tEl => {
+                const name = tEl.textContent.trim().toLowerCase();
+                if (activeTags.size && activeTags.has(name)) tEl.classList.add('matching-active'); else tEl.classList.remove('matching-active');
+            });
+        });
     }
 
     function closeFilterMenu() {
@@ -189,13 +255,16 @@ document.addEventListener("DOMContentLoaded", () => {
     syncURL(query);
 
         // Empty query restores full list in original order
-    if (!query && !activeTags.size) {
+        if (!query && !activeTags.size) {
             status && (status.textContent = "Showing all games");
             gamesContainer.innerHTML = "";
-            // Ensure we have a snapshot
             if (!allGames.length) snapshotGames();
-            allGames.forEach(g => gamesContainer.appendChild(g));
+            let base = [...allGames];
+            if (sortMode === 'asc') base.sort((a,b)=> (a.dataset.title||'').localeCompare(b.dataset.title||'', undefined, { sensitivity:'base' }));
+            else if (sortMode === 'desc') base.sort((a,b)=> (b.dataset.title||'').localeCompare(a.dataset.title||'', undefined, { sensitivity:'base' }));
+            base.forEach(g => gamesContainer.appendChild(g));
             applyStagger();
+            highlightMatchingTags();
             return;
         }
 
@@ -240,12 +309,22 @@ document.addEventListener("DOMContentLoaded", () => {
             if (s > 0) results.push({ element: game, s });
         });
 
-        results.sort((a, b) => b.s - a.s);
+        if (sortMode === 'asc' || sortMode === 'desc') {
+            // Filter by score>0 then sort alphabetically only
+            results.sort((a,b)=> {
+                const an = (a.element.dataset.title||'');
+                const bn = (b.element.dataset.title||'');
+                return sortMode === 'asc' ? an.localeCompare(bn, undefined, { sensitivity:'base' }) : bn.localeCompare(an, undefined, { sensitivity:'base' });
+            });
+        } else {
+            results.sort((a, b) => b.s - a.s);
+        }
 
         gamesContainer.innerHTML = "";
         if (results.length) {
             results.forEach(r => gamesContainer.appendChild(r.element));
             applyStagger();
+            highlightMatchingTags();
         } else {
             // Render friendly empty state but keep snapshot intact for next search
             gamesContainer.innerHTML = "<p>No games found.</p>";
@@ -256,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
             else status.textContent = results.length ? `${results.length} result${results.length !== 1 ? "s" : ""}` : "No games found";
         }
 
-        if (results.length === 0) {
+    if (results.length === 0) {
             gamesContainer.innerHTML = "<p>No games found.</p>";
         }
     };
@@ -280,6 +359,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!activeTags.size) {
                 const storedTags = sessionStorage.getItem(STORAGE_TAGS);
                 if (storedTags) storedTags.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>activeTags.add(t));
+            }
+            if (!sortMode) {
+                const storedSort = sessionStorage.getItem(STORAGE_SORT);
+                if (storedSort === 'asc' || storedSort === 'desc') sortMode = storedSort;
             }
         } catch {}
     buildFilterMenu();

@@ -102,9 +102,9 @@ header h1 {
 #game-title::before { display:none; }
 #game-title .game-logo { display: block; margin: 0 auto; height:auto; width:auto; max-width:100%; object-fit:contain; }
 @media (max-width: 600px) {
-    /* Mobile: square icon buttons, keep logo centered */
-    #game-title { padding: 0 72px; }
-    #game-title .game-logo { max-width: calc(100vw - 144px); max-height:60px; }
+    /* Mobile: enlarge logos further while keeping control space */
+    #game-title { padding: 0 52px; }
+    #game-title .game-logo { max-width: calc(100vw - 104px); max-height:78px; }
     header .title-row { min-height:64px; }
     header .title-row > .back-link,
     header .title-row > .music-toggle { width:48px; height:48px; padding:0; display:flex; align-items:center; justify-content:center; }
@@ -154,6 +154,11 @@ header .back-link:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(0,18
     /* Mobile: show arrow-only in the blue box */
     header .back-link .label { display: none; }
     header .back-link .icon { margin-right: 0; }
+}
+
+/* Mobile portrait: shrink main site title and reserve space for music toggle to avoid overlap */
+@media (max-width: 600px) and (orientation: portrait) {
+    header h1 { font-size: 1.4rem; line-height: 1.15; padding: 0 60px; box-sizing: border-box; }
 }
 
 main {
@@ -221,31 +226,63 @@ main {
     min-height: 56px; /* button(36px) + top padding(20px) ensures 20px gap below button */
     margin-bottom: 20px; /* gap above the cover equals card padding */
 }
-.game-header h2 {
-    margin: 0;
+/* Primary View button styling (single source of truth) */
+.game .view-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
+    padding: 0;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    border-radius: 18px;
+    background-color: rgba(30,30,30,0.18);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.25s ease, box-shadow 0.3s ease, transform 0.25s ease;
 }
+.game-header { position: relative; display:flex; align-items:center; gap:18px; padding-right:116px; /* reserve space for 96px square + ~20px gap */ }
+.game .card-top { display:flex; flex-direction:column; }
+/* Fixed header height for uniform card sizing; cover follows directly */
+/* Base uniform header before final size adjustments */
+html[data-page="index"] .game-header { min-height: 140px; margin-bottom: 8px; }
+html[data-page="index"] .cover { margin-top: 0; }
+html[data-page="index"] .game { display:flex; flex-direction:column; }
+html[data-page="index"] .game .tags { margin-top: 14px; }
+/* Constrain cover height for consistent card size (16:9 within a fixed max) */
+html[data-page="index"] .cover { aspect-ratio: 16/9; }
+@media (max-width: 600px) { html[data-page="index"] .game-header { min-height: 120px; } }
 
-.game p {
-    margin: 10px 0;
+/* Unified fixed header height for index cards to keep all cards same top spacing */
+/* Reduced header height (half previous desktop, ~one-third previous mobile) to cut excess gap */
+html[data-page="index"] .game-header {
+    height: 160px;
+    min-height: 160px;
+    padding-right: 140px; /* reserve space for button */
+    margin-bottom: 10px;
+    align-items: center;
 }
-
-/* Tag pills under each game card */
-.game .tags {
-    /* Balanced vertical rhythm: same gap above/below relative headings */
-    margin-top: 10px; /* matches default paragraph top margin for harmony */
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+html[data-page="index"] .game-header .title { height:100%; display:flex; align-items:center; }
+html[data-page="index"] .game-header .game-logo { max-height: 140px; width:auto; height:auto; object-fit:contain; }
+html[data-page="index"] .game-header .view-btn { top:50%; transform:translateY(-50%); }
+@media (max-width: 600px) {
+    html[data-page="index"] .game-header { height: 110px; min-height:110px; padding-right:118px; }
+    html[data-page="index"] .game-header .game-logo { max-height: 90px; }
+    html[data-page="index"] .game-header .view-btn { width:72px; height:72px; }
 }
-.game h2.tags-heading {
-    /* Ensure consistent spacing: heading has margin-top inherited (0 for first), we add bottom to mirror next gap */
-    margin-top: 16px; /* space after description */
-    margin-bottom: 8px; /* gap between heading and tag pills */
-}
-/* Reduce extra space before Gallery after tags to keep symmetry */
-.game h2 + .tags + h2 { /* Gallery heading following tags */
-    margin-top: 20px; /* standard section gap */
-}
+.game-header .title { flex:1 1 auto; }
+.game-header + .cover { margin-top: 12px; }
 /* External links section under Gallery */
 .game .external-links {
     margin-top: 16px;
@@ -283,6 +320,17 @@ main {
     font-weight: 600;
     line-height: 1;
     position: relative;
+    display: inline-flex;          /* keep pill intact */
+    align-items: center;
+    white-space: nowrap;           /* prevent breaking inside tag (e.g., fast-paced) */
+}
+.game .tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+html[data-page="index"] .game .tags { max-width:100%; overflow:hidden; }
+.game .tag.matching-active {
+    background: linear-gradient(135deg, rgba(0,188,212,0.35), rgba(33,150,243,0.35));
+    border-color: rgba(0,188,212,0.55);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0,188,212,0.35);
 }
 @media (min-width: 700px) {
     .game .tag { font-size: 0.7rem; }
@@ -409,6 +457,11 @@ main {
     box-shadow: 0 0 0 2px rgba(0,188,212,0.35), 0 4px 12px rgba(0,0,0,0.45);
 }
 .filter-menu .filter-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.filter-menu .filter-sort-section { margin-top:18px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px; }
+.filter-menu .filter-sort-section h3 { margin:0 0 4px; font-size: 0.95rem; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:#00bcd4; }
+.filter-menu .filter-sort-section .sort-modes { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 4px; }
+.filter-menu .filter-sort-section .sort-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.filter-menu .filter-sort-section .sort-option { min-width:34px; padding:6px 8px; font-size:0.8rem; }
 .filter-menu .clear-filters-btn {
     flex: 0 0 auto;
     font-size: 0.7rem;
@@ -442,44 +495,27 @@ main {
     .filter-menu h3 { font-size: 0.85rem; }
     .filter-menu .filter-tag { font-size: 0.65rem; }
 }
-
-.game .view-btn {
-    position: absolute;
-    top: 20px;   /* matches .game padding */
-    right: 20px; /* matches .game padding i.e., same gap as cover */
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 56px;            /* taller so (min-height 56 - 56) + 20 margin = 20px gap under */
-    padding: 0 14px;         /* keep horizontal padding */
-    line-height: 24px;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 8px;
-    background-color: rgba(30,30,30,0.06); /* match card translucency */
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.06);
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.25s ease, box-shadow 0.3s ease, transform 0.25s ease;
+/* Adjust sizes at breakpoints (keep alignment at 20px inset) */
+@media (max-width: 700px) {
+    .game .view-btn { width: 80px; height: 80px; }
+    .game-header { padding-right: 110px; }
 }
 
-/* Hover / focus states for glass button */
-.game .view-btn:hover {
-    background-color: rgba(30,30,30,0.18);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-    transform: translateY(-2px);
+/* Final override: ensure large logos on mobile index (after any earlier rules) */
+@media (max-width: 600px) {
+    html[data-page="index"] .game-header .game-logo {
+        max-height: 220px !important;
+    }
+    html[data-page="index"] .game-header { padding-right: 120px; }
 }
-.game .view-btn:active {
-    transform: translateY(0);
-    background-color: rgba(30,30,30,0.24);
+@media (max-width: 480px) {
+    .game .view-btn { width: 72px; height: 72px; }
+    .game-header { padding-right: 100px; }
 }
-.game .view-btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0,188,212,0.55), 0 4px 12px rgba(0,0,0,0.45);
-}
+/* Hover / focus states */
+.game .view-btn:hover { background-color: rgba(30,30,30,0.24); box-shadow: 0 4px 12px rgba(0,0,0,0.35); transform: translateY(-2px); }
+.game .view-btn:active { transform: translateY(0); background-color: rgba(30,30,30,0.28); }
+.game .view-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(0,188,212,0.55), 0 4px 12px rgba(0,0,0,0.45); }
 
 /* Cover image on index (single large preview) */
 .cover {
@@ -521,21 +557,29 @@ main {
 .cover .inline-media video:not([controls])::-webkit-media-controls-enclosure { display: none !important; }
 
 /* Game title logos */
+/* Game title logos – restored larger mobile presence */
 .game-header .game-logo,
-#game-title .game-logo {
-    max-height: 36px;
-    width: auto;
-    vertical-align: middle;
+#game-title .game-logo { max-height: 84px; width:auto; vertical-align: middle; }
+/* Extra large on wider screens */
+@media (min-width: 900px) {
+    .game-header .game-logo, #game-title .game-logo { max-height: 96px; }
 }
+/* Ensure header row accommodates taller logos */
+.game-header { min-height: 112px; }
 .game-header .title { display: flex; align-items: center; gap: 10px; }
 /* Slightly larger logos on wider (desktop) screens for better prominence */
-@media (min-width: 700px) {
-    .game-header .game-logo,
-    #game-title .game-logo { max-height: 56px; }
-    /* Keep card header layout tidy when logo grows */
-    .game-header { min-height: 72px; }
-    .game .view-btn { height: 72px; }
+@media (min-width: 700px) { .game-header .game-logo, #game-title .game-logo { max-height: 84px; } .game-header { min-height: 90px; } }
+
+/* Bigger logos on mobile index page (user request) */
+@media (max-width: 600px) {
+    /* Unified mobile index layout: large logo, centered button to its right, minimal vertical space */
+    html[data-page="index"] .game-header { position:relative; display:flex; flex-direction:row; align-items:center; gap:16px; padding:14px 20px 10px 20px; margin-bottom:10px; min-height:0; }
+    html[data-page="index"] .game-header h2 { padding-right:110px; margin:0; }
+    html[data-page="index"] .game-header .game-logo { display:block !important; max-height:200px !important; width:auto !important; height:auto !important; object-fit:contain; margin:0; }
+    html[data-page="index"] .game-header .view-btn { position:absolute; top:50%; right:20px; transform:translateY(-50%); width:72px; height:72px; }
 }
+
+/* Removed earlier conflicting small-screen button positioning (kept constant 20px inset) */
 .game-header .title { display: flex; align-items: center; gap: 10px; }
 .game-header .title .game-title-text { display: inline-block; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 1px, 1px); white-space: nowrap; border: 0; }
@@ -881,8 +925,6 @@ footer p {
 
 /* Mobile: stack search input and button to avoid overflow and odd radii */
 @media (max-width: 480px) {
-    header { padding: 12px; }
-    header h1 { font-size: 1.6rem; }
     .search-container { flex-direction: row; align-items: stretch; flex-wrap: nowrap; gap: 0; margin: 10px auto; max-width: 520px; width: 100%; }
     #search-box {
         flex: 1 1 auto;

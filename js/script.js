@@ -233,7 +233,26 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 		for (const [slug, entry] of entries) {
 			const name = entry?.name || slug;
-			const tags = Array.isArray(entry?.tags) ? entry.tags : [];
+				let tags = Array.isArray(entry?.tags) ? entry.tags.slice() : [];
+				// Global canonical tag order
+				const TAG_ORDER = [
+					'singleplayer','story','campaign','coop','co-op','multiplayer','online','pvp','pve','survival','sandbox','open-world','strategy','fps','rpg','action','adventure','horror','roguelike','indie','early-access','beta'
+				];
+
+				// alignment now purely via CSS (constant insets)
+				if (tags.length) {
+					const orderMap = new Map();
+					TAG_ORDER.forEach((t,i)=> orderMap.set(t,i));
+					tags.sort((a,b)=>{
+						const al = a.toLowerCase(); const bl = b.toLowerCase();
+						const ai = orderMap.has(al) ? orderMap.get(al) : Number.MAX_SAFE_INTEGER;
+						const bi = orderMap.has(bl) ? orderMap.get(bl) : Number.MAX_SAFE_INTEGER;
+
+			// (removed alignViewButtons - unnecessary with constant positioning)
+						if (ai !== bi) return ai - bi;
+						return al.localeCompare(bl);
+					});
+				}
 			const sec = document.createElement('section');
 			sec.className = 'game';
 			sec.id = slug;
@@ -241,11 +260,13 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (tags.length) sec.dataset.tags = tags.join(',');
 			sec.dataset.folder = `assets/games/galleries/${slug}`;
 			sec.innerHTML = `
-				<div class="game-header">
-					<h2 class="title"><a class="title-link" href="game.html?g=${slug}"><span class="game-title-text">${name}</span></a></h2>
-					<a class="btn view-btn" href="game.html?g=${slug}">View</a>
+				<div class="card-top">
+					<div class="game-header">
+						<h2 class="title"><a class="title-link" href="game.html?g=${slug}"><span class="game-title-text">${name}</span></a></h2>
+						<a class="btn view-btn" href="game.html?g=${slug}">View</a>
+					</div>
+					<div class="cover" data-game="${slug}"></div>
 				</div>
-				<div class="cover" data-game="${slug}"></div>
 				${tags.length ? `<div class="tags" aria-label="Tags">${tags.map(t => `<span class=\"tag\">${t}</span>`).join('')}</div>` : ''}`;
 			container.appendChild(sec);
 			// Try to replace text title with logo image if it exists
