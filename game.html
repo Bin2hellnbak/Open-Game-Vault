@@ -42,7 +42,7 @@
   const galleryEl = document.getElementById('game-gallery');
   if (galleryEl) galleryEl.dataset.game = slug;
   const section = document.getElementById('game-details');
-  if (section) section.dataset.folder = `assets/images/galleries/${slug}`;
+  if (section) section.dataset.folder = `assets/games/galleries/${slug}`;
     try {
       const res = await fetch('assets/data/games.json', { cache: 'no-cache' });
       const data = await res.json();
@@ -50,7 +50,38 @@
       if (!game) return;
       // Title
       const titleEl = document.getElementById('game-title');
-      titleEl.textContent = game.name || slug;
+      const titleText = game.name || slug;
+      titleEl.textContent = titleText;
+      // Try logo swap: prefer assets/games/logos/<slug>/logo.*
+      try {
+        const candidates = [
+          `assets/games/logos/${slug}/logo.webp`,
+          `assets/games/logos/${slug}/logo.png`,
+          `assets/games/logos/${slug}/logo.jpg`,
+          `assets/games/logos/${slug}/logo.jpeg`
+        ];
+        let i = 0;
+        const tryNext = () => {
+          if (i >= candidates.length) return;
+          const test = new Image();
+          test.onload = () => {
+            const img = document.createElement('img');
+            img.src = candidates[i];
+            img.alt = `${titleText} logo`;
+            img.className = 'game-logo';
+            // Keep text title for accessibility but visually hide it
+            titleEl.textContent = '';
+            titleEl.appendChild(img);
+            const sr = document.createElement('span');
+            sr.textContent = titleText;
+            sr.className = 'sr-only';
+            titleEl.appendChild(sr);
+          };
+          test.onerror = () => { i++; tryNext(); };
+          test.src = candidates[i];
+        };
+        tryNext();
+      } catch {}
       document.title = `${game.name || slug} - Game Details`;
       // Description
       document.getElementById('game-description').textContent = game.description || '';

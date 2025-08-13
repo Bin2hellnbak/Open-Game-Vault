@@ -1,4 +1,4 @@
-# Generates images.json files for each gallery folder under assets/images/galleries
+# Generates images.json files for each gallery folder under assets/games/galleries
 # Usage (from project root or anywhere):
 #   powershell -ExecutionPolicy Bypass -File scripts/generate-gallery-manifests.ps1
 
@@ -7,14 +7,14 @@ $ErrorActionPreference = 'Stop'
 
 # Resolve the galleries root relative to this script location, with a fallback to CWD
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$galleriesPath = Join-Path $scriptRoot '..\assets\images\galleries'
+$galleriesPath = Join-Path $scriptRoot '..\assets\games\galleries'
 try {
     $galleriesRoot = Resolve-Path -Path $galleriesPath -ErrorAction Stop
 } catch {
-    $galleriesRoot = Resolve-Path -Path (Join-Path (Get-Location) 'assets\images\galleries') -ErrorAction SilentlyContinue
+    $galleriesRoot = Resolve-Path -Path (Join-Path (Get-Location) 'assets\games\galleries') -ErrorAction SilentlyContinue
 }
 if (-not $galleriesRoot) {
-    Write-Error "Could not find assets\\images\\galleries. Run this from the project or adjust the script path."
+    Write-Error "Could not find assets\\games\\galleries. Run this from the project or adjust the script path."
     exit 1
 }
 

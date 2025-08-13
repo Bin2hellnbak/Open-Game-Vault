@@ -174,14 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
 				const slug = section?.id || cov.getAttribute('data-game');
 				if (!slug || !img) return false;
 				const candidates = [
-					`assets/images/covers/${slug}-cover.webp`,
-					`assets/images/covers/${slug}-cover.png`,
-					`assets/images/covers/${slug}-cover.jpg`,
-					`assets/images/covers/${slug}-cover.jpeg`,
-					`assets/images/${slug}-cover.webp`,
-					`assets/images/${slug}-cover.png`,
-					`assets/images/${slug}-cover.jpg`,
-					`assets/images/${slug}-cover.jpeg`
+					`assets/games/logos/${slug}/logo.webp`,
+					`assets/games/logos/${slug}/logo.png`,
+					`assets/games/logos/${slug}/logo.jpg`,
+					`assets/games/logos/${slug}/logo.jpeg`
 				];
 				let idx = 0;
 				const next = () => {
@@ -239,14 +235,43 @@ document.addEventListener('DOMContentLoaded', () => {
 			sec.className = 'game';
 			sec.id = slug;
 			sec.dataset.title = name;
-			sec.dataset.folder = `assets/images/galleries/${slug}`;
+			sec.dataset.folder = `assets/games/galleries/${slug}`;
 			sec.innerHTML = `
 				<div class="game-header">
-					<h2><a href="game.html?g=${slug}">${name}</a></h2>
+					<h2 class="title"><a class="title-link" href="game.html?g=${slug}"><span class="game-title-text">${name}</span></a></h2>
 					<a class="btn view-btn" href="game.html?g=${slug}">View</a>
 				</div>
 				<div class="cover" data-game="${slug}"></div>`;
 			container.appendChild(sec);
+			// Try to replace text title with logo image if it exists
+			try {
+				const titleLink = sec.querySelector('.game-header .title-link');
+				const textSpan = sec.querySelector('.game-header .game-title-text');
+				const candidates = [
+					`assets/games/logos/${slug}/logo.webp`,
+					`assets/games/logos/${slug}/logo.png`,
+					`assets/games/logos/${slug}/logo.jpg`,
+					`assets/games/logos/${slug}/logo.jpeg`
+				];
+				let i = 0;
+				const tryNext = () => {
+					if (i >= candidates.length) return;
+					const test = new Image();
+					test.onload = () => {
+						const img = document.createElement('img');
+						img.className = 'game-logo';
+						img.alt = `${name} logo`;
+						img.src = candidates[i];
+						if (titleLink) {
+							titleLink.insertBefore(img, textSpan || null);
+							if (textSpan) textSpan.style.display = 'none';
+						}
+					};
+					test.onerror = () => { i++; tryNext(); };
+					test.src = candidates[i];
+				};
+				tryNext();
+			} catch {}
 		}
 		// After cards are rendered, build inline gallery viewers into each cover
 		initInlineCoverViewers();
@@ -260,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		for (const cov of covers) {
 			const card = cov.closest('.game');
 			const slug = card?.id || cov.getAttribute('data-game');
-			const folder = card?.dataset.folder || (slug ? `assets/images/galleries/${slug}` : null);
+			const folder = card?.dataset.folder || (slug ? `assets/games/galleries/${slug}` : null);
 			cov.innerHTML = '';
 			cov.classList.remove('empty');
 			const mediaWrap = document.createElement('div');

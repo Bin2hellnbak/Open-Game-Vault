@@ -1,4 +1,4 @@
-# Watches assets/images/galleries and regenerates images.json when files change
+# Watches assets/games/galleries and regenerates images.json when files change
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts/watch-gallery.ps1
 
@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 
 # Resolve galleries root
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$galleriesPath = Join-Path $scriptRoot '..\assets\images\galleries'
+$galleriesPath = Join-Path $scriptRoot '..\assets\games\galleries'
 $galleriesRoot = Resolve-Path -Path $galleriesPath -ErrorAction Stop
 
 # Debounce timer

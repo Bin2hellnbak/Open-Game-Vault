@@ -150,7 +150,7 @@
       let folder = gameSection?.dataset.folder;
       let gameKey = gallery.dataset.game;
       if (!folder && gameKey) {
-        folder = `assets/images/galleries/${gameKey}`;
+        folder = `assets/games/galleries/${gameKey}`;
         if (gameSection) gameSection.dataset.folder = folder;
       }
 
@@ -171,12 +171,12 @@
       const finalize = async (loaded) => {
         if (loaded && loaded.length > 0) {
           imgs = loaded; renderPreview(gallery, imgs); wireClicks(gallery, imgs);
-        } else if (gameKey) {
+    } else if (gameKey) {
           const rootCandidates = [];
           for (let i = 1; i <= 12; i++) {
-            rootCandidates.push(`assets/images/${gameKey}-${i}.jpg`);
-            rootCandidates.push(`assets/images/${gameKey}-${i}.png`);
-            rootCandidates.push(`assets/images/${gameKey}-${i}.webp`);
+      rootCandidates.push(`assets/games/${gameKey}-${i}.jpg`);
+      rootCandidates.push(`assets/games/${gameKey}-${i}.png`);
+      rootCandidates.push(`assets/games/${gameKey}-${i}.webp`);
           }
           const rootLoaded = await probeAndGet(isMobileLike() ? rootCandidates.slice(0, 9) : rootCandidates);
           if (rootLoaded.length) { imgs = rootLoaded; renderPreview(gallery, imgs); wireClicks(gallery, imgs); }
@@ -255,7 +255,7 @@
           if (folderImgs && folderImgs.length) { imgs = folderImgs; renderPreview(gallery, imgs); wireClicks(gallery, imgs); loading = false; return; }
         } else if (gameKey) {
           const rootCandidates = [];
-          for (let i = 1; i <= 12; i++) { rootCandidates.push(`assets/images/${gameKey}-${i}.jpg`, `assets/images/${gameKey}-${i}.png`, `assets/images/${gameKey}-${i}.webp`); }
+          for (let i = 1; i <= 12; i++) { rootCandidates.push(`assets/games/${gameKey}-${i}.jpg`, `assets/games/${gameKey}-${i}.png`, `assets/games/${gameKey}-${i}.webp`); }
           const rootLoaded = await probeAndGet(rootCandidates);
           await finalize(rootLoaded); loading = false; return;
         }
@@ -269,7 +269,7 @@
         if (newKey && newKey !== gameKey) { gameKey = newKey; changed = true; }
         if (newFolder && newFolder !== folder) { folder = newFolder; changed = true; }
         if (changed && (!imgs || imgs.length === 0)) {
-          if (!folder && gameKey) { folder = `assets/images/galleries/${gameKey}`; if (gameSection) gameSection.dataset.folder = folder; }
+          if (!folder && gameKey) { folder = `assets/games/galleries/${gameKey}`; if (gameSection) gameSection.dataset.folder = folder; }
           init();
         }
       });

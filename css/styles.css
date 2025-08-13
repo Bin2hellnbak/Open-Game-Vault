@@ -212,17 +212,28 @@ main {
     inset: 0;
     display: grid;
     place-items: center;
-    .cover .inline-media video {
-        width: 100%;
-        height: auto;
-        display: block;
-    }
-    /* Hide controls until hover/focus: handled by JS toggling v.controls */
-    .cover .inline-media video::-webkit-media-controls-panel { display: flex; }
-    .cover .inline-media video:not([controls])::-webkit-media-controls-panel { display: none !important; }
-    .cover .inline-media video::-webkit-media-controls-enclosure { overflow: hidden; }
-    .cover .inline-media video:not([controls])::-webkit-media-controls-enclosure { display: none !important; }
 }
+.cover .inline-media video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+/* Hide controls until hover/focus: handled by JS toggling v.controls */
+.cover .inline-media video::-webkit-media-controls-panel { display: flex; }
+.cover .inline-media video:not([controls])::-webkit-media-controls-panel { display: none !important; }
+.cover .inline-media video::-webkit-media-controls-enclosure { overflow: hidden; }
+.cover .inline-media video:not([controls])::-webkit-media-controls-enclosure { display: none !important; }
+
+/* Game title logos */
+.game-header .game-logo,
+#game-title .game-logo {
+    max-height: 36px;
+    width: auto;
+    vertical-align: middle;
+}
+.game-header .title { display: flex; align-items: center; gap: 10px; }
+.game-header .title .game-title-text { display: inline-block; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 1px, 1px); white-space: nowrap; border: 0; }
 .cover .inline-media img,
 .cover .inline-media video {
     width: 100%;
@@ -688,8 +699,8 @@ body.no-scroll {
     cursor: pointer;
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.music-toggle.on { background-image: url('../assets/images/icons/music-playing.png'); }
-.music-toggle.off { background-image: url('../assets/images/icons/music-muted.png'); }
+.music-toggle.on { background-image: url('../assets/icons/music-playing.png'); }
+.music-toggle.off { background-image: url('../assets/icons/music-muted.png'); }
 .music-toggle:hover { opacity: 0.9; }
 .music-toggle:focus { outline: none; }
 .music-toggle { -webkit-tap-highlight-color: transparent; }
