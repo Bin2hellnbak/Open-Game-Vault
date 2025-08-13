@@ -3,7 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchButton = document.getElementById("search-button");
     const gameList = document.getElementById("game-list");
     const gamesContainer = document.getElementById("games-container");
-    const games = gamesContainer.querySelectorAll(".game");
+    // Keep a stable snapshot of all game elements rendered from games.json
+    let allGames = [];
+    const snapshotGames = () => { allGames = Array.from(gamesContainer.querySelectorAll('.game')); };
     const status = document.getElementById("results-status");
 
     const score = (text, q) => {
@@ -55,19 +57,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         window.history.replaceState({}, "", url);
 
-        // Empty query restores original order
+        // Empty query restores full list in original order
         if (!query) {
             status && (status.textContent = "Showing all games");
-            // Restore original DOM order by sorting by their original index
-            const original = Array.from(games);
             gamesContainer.innerHTML = "";
-            original.forEach(g => gamesContainer.appendChild(g));
+            // Ensure we have a snapshot
+            if (!allGames.length) snapshotGames();
+            allGames.forEach(g => gamesContainer.appendChild(g));
             applyStagger();
             return;
         }
 
         const results = [];
-        games.forEach((game) => {
+        // Search against the full snapshot so we can reconstruct DOM even after an empty state message
+        if (!allGames.length) snapshotGames();
+        allGames.forEach((game) => {
             const title = (game.dataset.title || "").toLowerCase();
             const desc = (game.querySelector("p")?.textContent || "").toLowerCase();
             const tags = (game.dataset.tags || "").toLowerCase();
@@ -78,9 +82,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         results.sort((a, b) => b.s - a.s);
 
-    gamesContainer.innerHTML = "";
-    results.forEach(r => gamesContainer.appendChild(r.element));
-    applyStagger();
+        gamesContainer.innerHTML = "";
+        if (results.length) {
+            results.forEach(r => gamesContainer.appendChild(r.element));
+            applyStagger();
+        } else {
+            // Render friendly empty state but keep snapshot intact for next search
+            gamesContainer.innerHTML = "<p>No games found.</p>";
+        }
 
         if (status) status.textContent = results.length ? `${results.length} result${results.length !== 1 ? "s" : ""}` : "No games found";
 
@@ -97,14 +106,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Load initial query from URL if present
-    const params = new URLSearchParams(window.location.search);
-    const q = params.get("q");
-    if (q) {
-        searchBox.value = q;
-        searchGames();
-    } else {
-        // Initial page load animation
-        applyStagger();
+    function runInitial() {
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get("q");
+        if (q) {
+            searchBox.value = q;
+            searchGames();
+        } else {
+            applyStagger();
+        }
     }
+
+    // Run once now and again after games are (re)rendered
+    runInitial();
+    window.addEventListener('gamesRendered', () => { snapshotGames(); runInitial(); });
 });

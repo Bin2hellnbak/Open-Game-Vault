@@ -19,8 +19,8 @@
       <p id="game-description"></p>
       <h2>Gallery</h2>
       <div class="gallery" id="game-gallery"></div>
-      <h2>Download</h2>
-      <div class="game-buttons" id="game-downloads"></div>
+  <h2 id="downloads-title">Download</h2>
+  <div class="game-buttons" id="game-downloads"></div>
     </section>
   </main>
   <footer>
@@ -32,6 +32,8 @@
   <script src="js/script.js"></script>
   <script src="js/gallery.js"></script>
   <script>
+    // Toggle to temporarily hide downloads across all game pages
+    const SHOW_DOWNLOADS = false;
   (async function(){
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('g');
@@ -56,6 +58,13 @@
   // Gallery setup: keep derived folder unless JSON overrides it
   if (game.galleryFolder && section) section.dataset.folder = game.galleryFolder;
       // Downloads
+      if (!SHOW_DOWNLOADS) {
+        const t = document.getElementById('downloads-title');
+        const dlEl = document.getElementById('game-downloads');
+        if (t) t.style.display = 'none';
+        if (dlEl) dlEl.style.display = 'none';
+        return; // skip rendering downloads
+      }
       const dlEl = document.getElementById('game-downloads');
       dlEl.innerHTML = '';
       const dls = game.downloads || {};

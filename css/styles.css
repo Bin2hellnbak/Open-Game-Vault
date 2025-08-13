@@ -212,6 +212,16 @@ main {
     inset: 0;
     display: grid;
     place-items: center;
+    .cover .inline-media video {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+    /* Hide controls until hover/focus: handled by JS toggling v.controls */
+    .cover .inline-media video::-webkit-media-controls-panel { display: flex; }
+    .cover .inline-media video:not([controls])::-webkit-media-controls-panel { display: none !important; }
+    .cover .inline-media video::-webkit-media-controls-enclosure { overflow: hidden; }
+    .cover .inline-media video:not([controls])::-webkit-media-controls-enclosure { display: none !important; }
 }
 .cover .inline-media img,
 .cover .inline-media video {
@@ -220,6 +230,22 @@ main {
     object-fit: cover;
     display: block;
     background: #000;
+}
+
+/* Keep proper aspect ratio in fullscreen (avoid crop/stretch on phones) */
+video:fullscreen,
+video:-webkit-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    object-fit: contain !important;
+    background: #000 !important;
+}
+.cover .inline-media:fullscreen video,
+.cover .inline-media:-webkit-full-screen video {
+    width: 100vw !important;
+    height: 100vh !important;
+    object-fit: contain !important;
+    background: #000 !important;
 }
 .cover .nav {
     position: absolute;
@@ -240,6 +266,29 @@ main {
 .cover .nav:hover { background: rgba(0,0,0,0.7); transform: translateY(-50%) scale(1.05); }
 .cover .nav.prev { left: 10px; }
 .cover .nav.next { right: 10px; }
+
+/* Inline cover: custom fullscreen button */
+/* custom fullscreen overlay removed */
+
+/* Inline cover auto-skip progress bar */
+.cover .progress {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    z-index: 2;
+    opacity: 0.95;
+    transition: opacity 0.2s ease;
+}
+.cover .progress.hidden { opacity: 0; }
+.cover .progress .bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #00bcd4, #2196f3);
+    box-shadow: 0 0 6px rgba(0,188,212,0.6);
+    transition: width 0.2s linear;
+}
 
 /* Placeholder text when no cover image is available */
 .cover.empty::after {

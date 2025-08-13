@@ -2,5 +2,13 @@
   "doom-dark-ages": {
     "name": "DOOM: The Dark Ages",
     "description": "BECOME THE SLAYER IN A MEDIEVAL WAR AGAINST HELL, DOOM: The Dark Ages is the prequel to the critically acclaimed DOOM (2016) and DOOM Eternal that tells an epic cinematic story worthy of the DOOM Slayer’s legend. In this third installment of the modern DOOM series, players will step into the blood-stained boots of the DOOM Slayer, in this never-before-seen dark and sinister medieval war against Hell."
+  },
+  "fallout4": {
+    "name": "Fallout 4",
+    "description": "As the sole survivor of Vault 111, you enter a world destroyed by nuclear war. Every second is a fight for survival, and every choice is yours. Only you can rebuild and determine the fate of the Wasteland. Welcome home."
+  },
+  "satisfactory": {
+    "name": "Satisfactory",
+    "description": "Satisfactory is a first-person open-world factory building game with a dash of exploration and combat. Play alone or with friends, explore an alien planet, create multi-story factories, and enter conveyor belt heaven!"
   }
 }

@@ -250,6 +250,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 		// After cards are rendered, build inline gallery viewers into each cover
 		initInlineCoverViewers();
+		setupCoverVisibilityObserver();
+		// Notify listeners (e.g., search) that games have been rendered
+		try { window.dispatchEvent(new Event('gamesRendered')); } catch {}
 	})();
 
 	async function initInlineCoverViewers() {
@@ -275,6 +278,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			nextBtn.textContent = '❯';
 			cov.appendChild(prevBtn);
 			cov.appendChild(nextBtn);
+
+			// (Removed custom fullscreen button)
+
+			// Progress bar UI
+			const prog = document.createElement('div');
+			prog.className = 'progress hidden';
+			const bar = document.createElement('div');
+			bar.className = 'bar';
+			prog.appendChild(bar);
+			cov.appendChild(prog);
 
 			let items = [];
 			const exts = ['.jpg','.jpeg','.png','.webp','.gif','.mp4','.webm','.ogg'];
@@ -304,32 +317,147 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 
 			let idx = 0;
-			function render() {
+		    function render() {
 				mediaWrap.innerHTML = '';
 				const src = items[idx];
 				const isVideo = /\.(mp4|webm|ogg)$/i.test(src);
 				if (isVideo) {
 					const v = document.createElement('video');
-					v.controls = true;
+					v.controls = false; // hidden by default; we show on hover/touch
 					v.playsInline = true;
 					v.setAttribute('playsinline','');
+					v.setAttribute('webkit-playsinline','');
+					v.setAttribute('disablepictureinpicture','');
+		    v.muted = true; // autoplay-friendly
+		    v.autoplay = true;
 					v.src = src;
 					mediaWrap.appendChild(v);
+		    // Reset/end tracking and try to start playback; muted autoplay should generally succeed
+					if (cov._inline) { cov._inline.endedAt = null; cov._inline.lastAdvanceAt = Date.now(); }
+					v.addEventListener('ended', () => {
+						// mark end and ensure it doesn't auto-restart
+						if (cov._inline) cov._inline.endedAt = Date.now();
+						v.autoplay = false;
+					});
+					// Show controls on hover/focus/touch; pin visibility briefly after touch to avoid flicker
+					const showControls = () => {
+						v.controls = true;
+						if (v._controlsHideTimer) { clearTimeout(v._controlsHideTimer); v._controlsHideTimer = null; }
+					};
+					const scheduleHide = (msDefault = 1000) => {
+						const now = Date.now();
+						let ms = msDefault;
+						const pinnedUntil = v._controlsPinnedUntil || 0;
+						if (pinnedUntil > now) {
+							ms = Math.max(msDefault, pinnedUntil - now + 50);
+						}
+						if (v._controlsHideTimer) clearTimeout(v._controlsHideTimer);
+						v._controlsHideTimer = setTimeout(() => { v.controls = false; v._controlsHideTimer = null; }, ms);
+					};
+					v.addEventListener('pointerenter', showControls);
+					v.addEventListener('pointerleave', () => scheduleHide(300));
+					v.addEventListener('focus', showControls);
+					v.addEventListener('blur', () => scheduleHide(200));
+					v.addEventListener('touchstart', () => {
+						v._controlsPinnedUntil = Date.now() + 2500;
+						showControls();
+						scheduleHide();
+					}, { passive: true });
+		    v.play?.().catch(() => {});
 				} else {
 					const img = document.createElement('img');
 					img.src = src;
 					img.alt = (card?.dataset.title || slug || 'media');
 					mediaWrap.appendChild(img);
+	    		if (cov._inline) { cov._inline.endedAt = null; cov._inline.lastAdvanceAt = Date.now(); }
 				}
 				prevBtn.style.display = items.length > 1 ? '' : 'none';
 				nextBtn.style.display = items.length > 1 ? '' : 'none';
+
+				// Reset progress bar at each render
+				bar.style.width = '0%';
+				// Show bar for images, hide for videos while playing; ended state will reveal via rAF
+				if (isVideo) prog.classList.add('hidden'); else prog.classList.remove('hidden');
 			}
 			const next = () => { idx = (idx + 1) % items.length; render(); };
 			const prev = () => { idx = (idx - 1 + items.length) % items.length; render(); };
-			nextBtn.addEventListener('click', next);
-			prevBtn.addEventListener('click', prev);
+			function setHold() {
+				if (cov._inline) {
+					cov._inline.userHoldUntil = Date.now() + 20000; // 20s hold
+					cov._inline.endedAt = null; // reset any ended waits
+					// Hide and reset progress bar visually during hold
+					if (cov._inline._progressWrap) cov._inline._progressWrap.classList.add('hidden');
+					if (cov._inline._progressBar) cov._inline._progressBar.style.width = '0%';
+				}
+			}
+			nextBtn.addEventListener('click', () => { next(); setHold(); });
+			prevBtn.addEventListener('click', () => { prev(); setHold(); });
+			// (Custom fullscreen overlay removed)
 			render();
+
+			// Expose inline controller for auto-rotation logic
+			cov._inline = {
+				el: cov,
+				get items() { return items; },
+				get index() { return idx; },
+				set index(i) { idx = ((i % items.length) + items.length) % items.length; render(); },
+				next,
+				prev,
+				currentIsVideo() { return items.length > 0 && /\.(mp4|webm|ogg)$/i.test(items[idx]); },
+				getCurrentVideoEl() { return mediaWrap.querySelector('video'); },
+				endedAt: null,
+				lastAdvanceAt: Date.now(),
+				userHoldUntil: null,
+				inView: false,
+				pausedByVisibility: false,
+				_progressBar: bar,
+				_progressWrap: prog
+			};
 		}
+		// Signal that all covers finished initial inline setup
+		try { window.dispatchEvent(new Event('coversReady')); } catch {}
+	}
+
+	// Pause media and countdown when covers are out of view; resume countdown on re-entry
+	let coverIO = null;
+	function setupCoverVisibilityObserver(){
+		try {
+			if (coverIO) { // re-observe for new covers
+				const covers = document.querySelectorAll('#games-container .cover');
+				covers.forEach(c => coverIO.observe(c));
+				return;
+			}
+			coverIO = new IntersectionObserver((entries) => {
+				const now = Date.now();
+				entries.forEach(entry => {
+					const cov = entry.target;
+					const ctl = cov && cov._inline;
+					if (!ctl) return;
+					ctl.intersectionRatio = entry.intersectionRatio || 0;
+					if (entry.isIntersecting) {
+						ctl.inView = true;
+						// Auto-resume only if we paused due to visibility
+						if (ctl.pausedByVisibility) {
+							const v = ctl.getCurrentVideoEl();
+							if (v && v.paused && !v.ended) { v.play?.().catch(() => {}); }
+							ctl.pausedByVisibility = false;
+						}
+					} else {
+						ctl.inView = false;
+						const v = ctl.getCurrentVideoEl();
+						if (v && !v.paused) {
+							v.pause();
+							ctl.pausedByVisibility = true;
+						}
+						// Hide progress bar while offscreen
+						if (ctl._progressWrap) { ctl._progressWrap.classList.add('hidden'); }
+						if (ctl._progressBar) { ctl._progressBar.style.width = '0%'; }
+					}
+				});
+			}, { root: null, threshold: 0 });
+			const covers = document.querySelectorAll('#games-container .cover');
+			covers.forEach(c => coverIO.observe(c));
+		} catch {}
 	}
 
 		const base = 'assets/audio/music/background/';
@@ -695,5 +823,247 @@ document.addEventListener('DOMContentLoaded', () => {
 				playNext();
 			}
 			setTimeout(maybeShowToggle, 1000);
+		})();
+
+	// Auto-rotate the focused card's cover media on index
+	(function initAutoRotateCovers(){
+		const isIndexHere = document.documentElement.getAttribute('data-page') === 'index';
+		if (!isIndexHere) return;
+		let focused = null;
+		let rafId = 0;
+		function computeFocused(){
+			const games = document.querySelectorAll('#games-container .game');
+			const cy = window.innerHeight / 2;
+			let candidate = null;
+			let bestDist = Infinity;
+			// Single pass: nearest visible section by center distance
+			games.forEach(game => {
+				const rc = game.getBoundingClientRect();
+				if (rc.bottom <= 0 || rc.top >= window.innerHeight) return; // offscreen
+				const dist = Math.abs((rc.top + rc.height/2) - cy);
+				if (dist < bestDist) { bestDist = dist; candidate = game; }
+			});
+			const best = candidate;
+			if (focused !== best) {
+				if (focused) focused.classList.remove('focused');
+				focused = best;
+				if (focused) {
+					focused.classList.add('focused');
+					const cov = focused.querySelector('.cover');
+					const ctl = cov && cov._inline;
+					if (ctl) {
+						// Clear any lingering user hold on focus change so the centered item rotates
+						ctl.userHoldUntil = null;
+						ctl.lastAdvanceAt = Date.now();
+						ctl.endedAt = null;
+						if (ctl._progressWrap) ctl._progressWrap.classList.add('hidden');
+						if (ctl._progressBar) ctl._progressBar.style.width = '0%';
+						try { enforceSingleAudible(); } catch {}
+					}
+				}
+			}
+		}
+		let scrollDebounce = 0;
+		const onScrollOrResize = () => {
+			if (rafId) cancelAnimationFrame(rafId);
+			rafId = requestAnimationFrame(computeFocused);
+			if (scrollDebounce) clearTimeout(scrollDebounce);
+			scrollDebounce = setTimeout(computeFocused, 60);
+		};
+		window.addEventListener('scroll', onScrollOrResize, { passive: true });
+		window.addEventListener('resize', onScrollOrResize);
+		window.addEventListener('gamesRendered', () => setTimeout(computeFocused, 0));
+		window.addEventListener('coversReady', () => setTimeout(computeFocused, 0));
+		// Debounced initial compute to allow layout to settle
+		setTimeout(computeFocused, 50);
+		setTimeout(computeFocused, 200);
+
+		let timer = null;
+		let globalVideoUnmutedPref = false; // user preference: if they unmute any inline video
+		let inlineVolumePref = (() => {
+			try {
+				const raw = localStorage.getItem('ogvInlineVolume');
+				if (!raw) return null;
+				const v = parseFloat(raw);
+				if (!isFinite(v)) return null;
+				return Math.min(1, Math.max(0, v));
+			} catch { return null; }
+		})();
+		function advanceOne(ctl){
+			if (!ctl || !ctl.items || ctl.items.length === 0) return;
+			// Visible check: prefer IO flag, but fall back to geometry to avoid async lag
+			let isVisible = ctl.inView !== false;
+			if (!isVisible && ctl.el) {
+				const rc = ctl.el.getBoundingClientRect();
+				isVisible = (rc.bottom > 0 && rc.top < window.innerHeight);
+			}
+			if (!isVisible) return; // only active when visible
+			const now = Date.now();
+			if (ctl.userHoldUntil && now < ctl.userHoldUntil) return;
+			if (ctl.userHoldUntil && now >= ctl.userHoldUntil) {
+				ctl.userHoldUntil = null; ctl.lastAdvanceAt = now; ctl.endedAt = null;
+			}
+			if (ctl.currentIsVideo()) {
+				const v = ctl.getCurrentVideoEl();
+				if (v) {
+					if (!v.ended) { ctl.endedAt = null; ctl.lastAdvanceAt = now; return; }
+					v.autoplay = false;
+					if (!ctl.endedAt) ctl.endedAt = now;
+					if ((now - ctl.endedAt) >= 5000) { ctl.endedAt = null; ctl.lastAdvanceAt = now; ctl.next(); }
+				}
+			} else {
+				if (!ctl.lastAdvanceAt) ctl.lastAdvanceAt = now;
+				if ((now - ctl.lastAdvanceAt) >= 5000) { ctl.lastAdvanceAt = now; ctl.next(); }
+			}
+		}
+		function tick(){
+			// Advance the focused cover every second
+			if (focused) {
+				const cov = focused.querySelector('.cover');
+				advanceOne(cov && cov._inline);
+			}
+			// Advance all other visible covers as well
+			const visibles = document.querySelectorAll('#games-container .cover');
+			visibles.forEach(c => {
+				const ctl = c._inline; if (!ctl) return;
+				const v = ctl.getCurrentVideoEl && ctl.getCurrentVideoEl();
+				// Pause if fully offscreen; otherwise allow resume
+				let isVisible = ctl.inView !== false;
+				if (!isVisible && ctl.el) {
+					const rc = ctl.el.getBoundingClientRect();
+					isVisible = (rc.bottom > 0 && rc.top < window.innerHeight);
+				}
+				if (!isVisible) { if (v && !v.paused) v.pause(); return; }
+				if (v && ctl.pausedByVisibility && v.paused && !v.ended) { v.play?.().catch(() => {}); ctl.pausedByVisibility = false; }
+				if (c.closest('.game') !== focused) advanceOne(ctl);
+			});
+			// Keep audio focus in sync with focus and visibility
+			enforceSingleAudible();
+		}
+		function start(){ if (timer) clearInterval(timer); timer = setInterval(tick, 1000); }
+		function stop(){ if (timer) { clearInterval(timer); timer = null; } }
+
+		// Smooth progress bar updater using rAF across all visible covers
+		let progRaf = 0;
+		function updateProgress(){
+			const now = Date.now();
+			const covers = document.querySelectorAll('#games-container .cover');
+			covers.forEach(cov => {
+				const ctl = cov && cov._inline; if (!ctl || !ctl._progressBar || !ctl._progressWrap) return;
+				const bar = ctl._progressBar; const wrap = ctl._progressWrap;
+				// Visibility: prefer IO flag, else geometry
+				let isVisible = ctl.inView !== false;
+				if (!isVisible && ctl.el) {
+					const rc = ctl.el.getBoundingClientRect();
+					isVisible = (rc.bottom > 0 && rc.top < window.innerHeight);
+				}
+				if (!isVisible) {
+					wrap.classList.add('hidden');
+					bar.style.width = '0%';
+					return;
+				}
+				// Respect user hold: hide during hold
+				if (ctl.userHoldUntil && now < ctl.userHoldUntil) {
+					wrap.classList.add('hidden');
+					bar.style.width = '0%';
+					return;
+				}
+				let pct = 0;
+				if (ctl.currentIsVideo()) {
+					const v = ctl.getCurrentVideoEl();
+					if (v && !v.ended) {
+						wrap.classList.add('hidden');
+						bar.style.width = '0%';
+						return;
+					} else if (v && ctl.endedAt) {
+						const waitMs = 5000;
+						pct = Math.min(100, Math.max(0, ((now - ctl.endedAt) / waitMs) * 100));
+					}
+				} else {
+					const waitMs = 5000;
+					const started = ctl.lastAdvanceAt || now;
+					pct = Math.min(100, Math.max(0, ((now - started) / waitMs) * 100));
+				}
+				bar.style.width = pct + '%';
+				if (!ctl.currentIsVideo() || (ctl.currentIsVideo() && ctl.endedAt)) wrap.classList.remove('hidden');
+			});
+			progRaf = requestAnimationFrame(updateProgress);
+		}
+		function startProgress(){ if (!progRaf) progRaf = requestAnimationFrame(updateProgress); }
+		function stopProgress(){ if (progRaf) { cancelAnimationFrame(progRaf); progRaf = 0; } }
+		// Track user mute changes to adopt as a global preference
+		document.addEventListener('volumechange', (e) => {
+			const t = e.target;
+			if (!(t && t.tagName === 'VIDEO')) return;
+			// Only consider inline cover videos
+			const cov = t.closest('.cover');
+			if (!cov || !cov._inline) return;
+			// Update unmute preference and remember volume level
+			const vol = (typeof t.volume === 'number') ? t.volume : 1;
+			globalVideoUnmutedPref = !t.muted && vol > 0;
+			inlineVolumePref = Math.min(1, Math.max(0, vol));
+			try { localStorage.setItem('ogvInlineVolume', String(inlineVolumePref)); } catch {}
+		}, true);
+
+		function enforceSingleAudible(){
+			const vids = document.querySelectorAll('#games-container .cover video');
+			vids.forEach(v => { v.muted = true; });
+			if (focused && globalVideoUnmutedPref) {
+				const cov = focused.querySelector('.cover');
+				const ctl = cov && cov._inline;
+				const v = cov && cov.querySelector('video');
+				if (v && ctl) {
+					// Only unmute when visible to avoid offscreen audio
+					let isVisible = ctl.inView !== false;
+					if (!isVisible && ctl.el) {
+						const rc = ctl.el.getBoundingClientRect();
+						isVisible = (rc.bottom > 0 && rc.top < window.innerHeight);
+					}
+					if (isVisible) {
+						v.muted = false;
+						// Apply saved volume if available; fallback to 1 if still zero
+						try {
+							if (typeof inlineVolumePref === 'number') v.volume = inlineVolumePref;
+							if ((v.volume || 0) === 0) v.volume = 1;
+						} catch {}
+					}
+				}
+			}
+		}
+
+		start();
+		startProgress();
+		window.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'visible') { start(); startProgress(); }
+			else { stop(); stopProgress(); }
+		});
+	})();
+
+		// Duck background music when any audible video is playing (index only)
+		(function setupVideoAudioDucking(){
+			try {
+				const isIndexHere = document.documentElement.getAttribute('data-page') === 'index';
+				if (!isIndexHere) return;
+				function isAudible(v){
+					if (!v) return false;
+					const playing = !v.paused && !v.ended && v.readyState >= 2;
+					return playing && !v.muted && (v.volume || 0) > 0;
+				}
+				function anyAudibleVideo(){
+					const vids = document.querySelectorAll('video');
+					for (const v of vids) { if (isAudible(v)) return true; }
+					return false;
+				}
+				function updateMusicForVideos(){
+					if (!prefOn) return; // if user turned music off, don't change
+					if (anyAudibleVideo()) fadeTo(0); else fadeTo(MAX_VOL);
+				}
+				const onVideoEvent = (e) => { if (e && e.target && e.target.tagName === 'VIDEO') setTimeout(updateMusicForVideos, 0); };
+				document.addEventListener('play', onVideoEvent, true);
+				document.addEventListener('pause', onVideoEvent, true);
+				document.addEventListener('ended', onVideoEvent, true);
+				document.addEventListener('volumechange', onVideoEvent, true);
+				window.addEventListener('gamesRendered', () => setTimeout(updateMusicForVideos, 0));
+			} catch {}
 		})();
 });
