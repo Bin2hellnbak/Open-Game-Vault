@@ -105,10 +105,29 @@ header .back-link {
     position: static;
     justify-self: center; /* halfway between edge and title */
     font-size: 0.95rem;
-    padding: 6px 12px;
+    padding: 10px 16px;
     line-height: 1.1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(30,30,30,0.06);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.25s ease, box-shadow 0.3s ease, transform 0.25s ease;
 }
 header .back-link .icon { display: inline-block; margin-right: 6px; }
+header .back-link:hover {
+    background-color: rgba(30,30,30,0.18);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transform: translateY(-2px);
+}
+header .back-link:active { transform: translateY(0); background-color: rgba(30,30,30,0.24); }
+header .back-link:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(0,188,212,0.55), 0 4px 12px rgba(0,0,0,0.45); }
 
 @media (max-width: 480px) {
     /* Compact header spacing on small screens */
