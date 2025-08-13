@@ -466,10 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
 					ctl.intersectionRatio = entry.intersectionRatio || 0;
 					if (entry.isIntersecting) {
 						ctl.inView = true;
-						// Auto-resume only if we paused due to visibility
-						if (ctl.pausedByVisibility) {
-							const v = ctl.getCurrentVideoEl();
-							if (v && v.paused && !v.ended) { v.play?.().catch(() => {}); }
+						// Attempt to (re)start video when entering view. Rationale: a video first rendered offscreen may never have set pausedByVisibility.
+						const v = ctl.getCurrentVideoEl();
+						if (v && v.paused && !v.ended) {
+							v.play?.().catch(()=>{});
 							ctl.pausedByVisibility = false;
 						}
 					} else {

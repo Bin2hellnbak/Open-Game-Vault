@@ -34,6 +34,37 @@
   <script>
     // Toggle to temporarily hide downloads across all game pages
     const SHOW_DOWNLOADS = false;
+    // Ensure logo never overlaps side buttons (back, music) regardless of extreme aspect ratios
+    function adjustLogoSafety() {
+      try {
+        const titleRow = document.querySelector('header .title-row');
+        const back = document.querySelector('header .title-row .back-link');
+        const logo = document.querySelector('#game-title .game-logo');
+        if (!titleRow || !back || !logo) return;
+        const music = document.querySelector('header .music-toggle');
+        const rowRect = titleRow.getBoundingClientRect();
+        const backRect = back.getBoundingClientRect();
+        const musicRect = music ? music.getBoundingClientRect() : null;
+        // Space reserved on left includes gutter (distance from row left to back left) plus button width + desired gap
+        const leftReserve = (backRect.left - rowRect.left) + backRect.width + 12; // 12px gap
+        const rightReserve = musicRect ? (rowRect.right - musicRect.right) + musicRect.width + 12 : 12; // minimal gap if no music btn
+        const available = Math.max(60, rowRect.width - leftReserve - rightReserve);
+        logo.style.maxWidth = available + 'px';
+        // If still overlapping (edge case), shift logo via margin-left
+        const logoRect = logo.getBoundingClientRect();
+        if (logoRect.left < backRect.right + 8) {
+          const shift = (backRect.right + 8) - logoRect.left;
+          // apply as padding-left on #game-title so centering remains visually acceptable
+          const titleEl = document.getElementById('game-title');
+          if (titleEl) {
+            const existingPadLeft = parseFloat(getComputedStyle(titleEl).paddingLeft)||0;
+            titleEl.style.paddingLeft = (existingPadLeft + shift) + 'px';
+          }
+        }
+      } catch {}
+    }
+    let _logoResizeTimer; 
+    window.addEventListener('resize', () => { clearTimeout(_logoResizeTimer); _logoResizeTimer = setTimeout(adjustLogoSafety, 120); });
   (async function(){
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('g');
@@ -76,6 +107,8 @@
             sr.textContent = titleText;
             sr.className = 'sr-only';
             titleEl.appendChild(sr);
+            // No JS centering needed now; CSS ensures centering
+            requestAnimationFrame(adjustLogoSafety);
           };
           test.onerror = () => { i++; tryNext(); };
           test.src = candidates[i];
