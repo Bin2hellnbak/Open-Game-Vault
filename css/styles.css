@@ -752,8 +752,8 @@ body.no-scroll {
     header, .game {
         -webkit-backdrop-filter: none !important;
         backdrop-filter: none !important;
-    /* Simple non-blurred 50% opacity on mobile */
-    background-color: rgba(30,30,30,0.50) !important;
+    /* Simple non-blurred higher opacity on mobile for better readability (was 50%, then 70%) */
+    background-color: rgba(30,30,30,0.80) !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     }
     /* Hide galaxy layers on mobile to avoid any perceived haze */
