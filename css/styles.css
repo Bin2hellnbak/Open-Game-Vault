@@ -183,6 +183,30 @@ main {
     padding: 0 14px;         /* keep horizontal padding */
     line-height: 24px;
     font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    background-color: rgba(30,30,30,0.06); /* match card translucency */
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.25s ease, box-shadow 0.3s ease, transform 0.25s ease;
+}
+
+/* Hover / focus states for glass button */
+.game .view-btn:hover {
+    background-color: rgba(30,30,30,0.18);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transform: translateY(-2px);
+}
+.game .view-btn:active {
+    transform: translateY(0);
+    background-color: rgba(30,30,30,0.24);
+}
+.game .view-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,188,212,0.55), 0 4px 12px rgba(0,0,0,0.45);
 }
 
 /* Cover image on index (single large preview) */
