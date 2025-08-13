@@ -45,26 +45,33 @@
         const rowRect = titleRow.getBoundingClientRect();
         const backRect = back.getBoundingClientRect();
         const musicRect = music ? music.getBoundingClientRect() : null;
-        // Space reserved on left includes gutter (distance from row left to back left) plus button width + desired gap
-  const leftReserve = (backRect.left - rowRect.left) + backRect.width + 8; // smaller gap to allow larger logo
-  const rightReserve = musicRect ? (rowRect.right - musicRect.right) + musicRect.width + 8 : 8;
-  const available = Math.max(80, rowRect.width - leftReserve - rightReserve);
+        // Prepare baseline padding (store once)
+        const titleEl = document.getElementById('game-title');
+        if (!titleEl) return;
+        if (!titleEl.dataset.basePadLeft) {
+          const cs = getComputedStyle(titleEl);
+            titleEl.dataset.basePadLeft = cs.paddingLeft.replace('px','');
+            titleEl.dataset.basePadRight = cs.paddingRight.replace('px','');
+        }
+        // Reset any previous dynamic adjustments so calculations are fresh
+        titleEl.style.paddingLeft = titleEl.dataset.basePadLeft + 'px';
+        // Space reserved on left/right: gutter to button + button width + gap
+        const leftReserve = (backRect.left - rowRect.left) + backRect.width + 8;
+        const rightReserve = musicRect ? (rowRect.right - musicRect.right) + musicRect.width + 8 : 8;
+        const available = Math.max(80, rowRect.width - leftReserve - rightReserve);
         logo.style.maxWidth = available + 'px';
-        // If still overlapping (edge case), shift logo via margin-left
+        // After width constraint, ensure logo doesn't visually collide with back button
         const logoRect = logo.getBoundingClientRect();
-        if (logoRect.left < backRect.right + 6) {
-          const shift = (backRect.right + 6) - logoRect.left;
-          // apply as padding-left on #game-title so centering remains visually acceptable
-          const titleEl = document.getElementById('game-title');
-          if (titleEl) {
-            const existingPadLeft = parseFloat(getComputedStyle(titleEl).paddingLeft)||0;
-            titleEl.style.paddingLeft = (existingPadLeft + shift) + 'px';
-          }
+        if (logoRect.left < backRect.right + 4) {
+          const shift = (backRect.right + 4) - logoRect.left;
+          const base = parseFloat(titleEl.dataset.basePadLeft)||0;
+          titleEl.style.paddingLeft = (base + shift) + 'px';
         }
       } catch {}
     }
     let _logoResizeTimer; 
     window.addEventListener('resize', () => { clearTimeout(_logoResizeTimer); _logoResizeTimer = setTimeout(adjustLogoSafety, 120); });
+    window.addEventListener('orientationchange', () => { setTimeout(adjustLogoSafety, 60); });
   (async function(){
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('g');

@@ -119,6 +119,10 @@ header .title-row { position:relative; display:flex; align-items:center; justify
 header .title-row > .back-link { position:absolute; left:20px; top:50%; transform:translateY(-50%); }
 header .title-row > #game-title { margin:0; }
 header .title-row > .music-toggle { position:absolute; right:20px; top:50%; transform:translateY(-50%); }
+/* Ensure interactive controls sit above logo img and reserve space so wide logos don't block taps */
+html[data-page="game"] header .title-row > .back-link,
+html[data-page="game"] header .title-row > .music-toggle { z-index:5; }
+html[data-page="game"] header .title-row > #game-title { padding:0 72px; }
 /* Back-to-home button: inline, smaller than title, aligned near center (right end of left column) */
 header .back-link {
     position: static;
@@ -159,6 +163,32 @@ header .back-link:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(0,18
 /* Mobile portrait: shrink main site title and reserve space for music toggle to avoid overlap */
 @media (max-width: 600px) and (orientation: portrait) {
     header h1 { font-size: 1.4rem; line-height: 1.15; padding: 0 60px; box-sizing: border-box; }
+}
+
+/* Mobile game detail page: center logo reliably and prevent overlap; align back button with About box padding */
+@media (max-width: 600px) {
+    html[data-page="game"] header .title-row {
+        /* Revert to flex so logo can be perfectly centered when music toggle absent */
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:0 20px; /* content gutter */
+        min-height:72px;
+        position:relative;
+    }
+    html[data-page="game"] header .title-row > .back-link {
+        position:absolute;
+        left:20px;
+        top:50%;
+        transform:translateY(-50%);
+        width:auto; height:48px; /* allow intrinsic horizontal padding for better tap target */
+        padding:10px 14px; /* restore internal spacing */
+        display:flex; align-items:center; justify-content:center;
+        z-index:3; /* above centered logo */
+    }
+    html[data-page="game"] header .title-row > .music-toggle { position:absolute; right:20px; top:50%; transform:translateY(-50%); }
+    html[data-page="game"] #game-title { padding:0 68px; width:100%; text-align:center; }
+    html[data-page="game"] #game-title .game-logo { display:block; max-width:100%; max-height:82px; margin:0 auto; }
 }
 
 main {
@@ -324,7 +354,8 @@ html[data-page="index"] .game-header .view-btn { top:50%; transform:translateY(-
     align-items: center;
     white-space: nowrap;           /* prevent breaking inside tag (e.g., fast-paced) */
 }
-.game .tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+/* Tag container: symmetric vertical spacing */
+.game .tags { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
 html[data-page="index"] .game .tags { max-width:100%; overflow:hidden; }
 .game .tag.matching-active {
     background: linear-gradient(135deg, rgba(0,188,212,0.35), rgba(33,150,243,0.35));
