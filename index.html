@@ -10,8 +10,10 @@
     <header>
     <h1>Open Game Vault</h1>
         <div class="search-container">
+            <button id="filter-toggle" class="filter-toggle" aria-label="Filter games" aria-haspopup="true" aria-expanded="false"></button>
             <input type="text" id="search-box" placeholder="Search for a game..." aria-label="Search games">
             <button id="search-button">Search</button>
+            <div id="filter-menu" class="filter-menu" hidden aria-label="Tag filters"></div>
         </div>
     </header>
     <main id="game-list">

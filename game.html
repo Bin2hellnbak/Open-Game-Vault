@@ -85,6 +85,19 @@
       document.title = `${game.name || slug} - Game Details`;
       // Description
       document.getElementById('game-description').textContent = game.description || '';
+      // Tags (if any)
+      if (Array.isArray(game.tags) && game.tags.length) {
+        const details = document.getElementById('game-details');
+        if (details && !details.querySelector('.tags')) {
+          const tagWrap = document.createElement('div');
+          tagWrap.className = 'tags';
+          tagWrap.setAttribute('aria-label','Tags');
+          tagWrap.innerHTML = game.tags.map(t => `<span class="tag">${t}</span>`).join('');
+          details.insertBefore(tagWrap, details.querySelector('h2:nth-of-type(2)')); // before Gallery heading
+          // Add data-tags for consistency (not used on details page search currently)
+          details.dataset.tags = game.tags.join(',');
+        }
+      }
   // No features anymore; description-only
   // Gallery setup: keep derived folder unless JSON overrides it
   if (game.galleryFolder && section) section.dataset.folder = game.galleryFolder;

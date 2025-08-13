@@ -43,7 +43,7 @@ header {
     text-align: center;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
     position: relative;
-    z-index: 1;
+    z-index: 3000; /* ensure overlay menus inside header sit above main content */
 }
 /* Ensure header content sits above the internal blur proxy (exclude absolute-positioned music toggle) */
 header > *:not(.header-blur-proxy):not(.music-toggle) { position: relative; z-index: 1; }
@@ -169,6 +169,187 @@ main {
 
 .game p {
     margin: 10px 0;
+}
+
+/* Tag pills under each game card */
+.game .tags {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.game .tag {
+    font-size: 0.65rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #fff;
+    font-weight: 600;
+    line-height: 1;
+    position: relative;
+}
+@media (min-width: 700px) {
+    .game .tag { font-size: 0.7rem; }
+}
+
+/* Tag filter bar (index) */
+.tag-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px auto 4px;
+    max-width: 1200px;
+    padding: 0 20px;
+}
+.tag-filter-bar .filter-tag {
+    font-size: 0.65rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color .25s ease, box-shadow .25s ease, transform .25s ease;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+.tag-filter-bar .filter-tag:hover { background: rgba(255,255,255,0.18); }
+.tag-filter-bar .filter-tag.active {
+    background: linear-gradient(135deg, rgba(0,188,212,0.75), rgba(33,150,243,0.75));
+    box-shadow: 0 0 0 2px rgba(0,188,212,0.35), 0 4px 12px rgba(0,0,0,0.45);
+}
+.tag-filter-bar .filter-tag:active { transform: translateY(1px); }
+@media (min-width: 700px) { .tag-filter-bar .filter-tag { font-size: 0.7rem; } }
+
+/* New filter toggle icon next to search */
+.filter-toggle {
+    flex: 0 0 44px;
+    height: 44px;
+    border: 1px solid #333;
+    border-right: none; /* will visually merge with input */
+    border-radius: 5px 0 0 5px; /* left rounded corners */
+    background: #1e1e1e url('../assets/general/icons/filter.png') center center / 60% 60% no-repeat;
+    cursor: pointer;
+    position: relative;
+    transition: background-color .25s ease, box-shadow .25s ease;
+}
+.filter-toggle:hover { background-color: #252525; }
+.filter-toggle:focus-visible { outline: 2px solid #00bcd4; outline-offset: 2px; }
+.filter-toggle.has-filters::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 10px;
+    height: 10px;
+    background: #00bcd4;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(0,188,212,0.8);
+}
+
+/* Popup filter menu */
+.filter-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    background: rgba(18,18,18,0.92);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 14px 16px 18px;
+    min-width: 260px;
+    max-width: min(90vw, 340px);
+    max-height: min(70vh, 520px);
+    overflow: auto;
+    z-index: 4000; /* above header base */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+}
+.filter-menu[hidden] { display: none !important; }
+/* When JS sets data-pos=anchored we treat it as absolutely anchored under button (desktop) */
+.filter-menu[data-pos="anchored"] { position: absolute; }
+.filter-menu h3 {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: #00bcd4;
+}
+.filter-menu .filter-tags-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.filter-menu .filter-tag {
+    font-size: 0.63rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color .25s ease, box-shadow .25s ease, transform .2s ease;
+}
+.filter-menu .filter-tag:hover { background: rgba(255,255,255,0.16); }
+.filter-menu .filter-tag.active {
+    background: linear-gradient(135deg, rgba(0,188,212,0.8), rgba(33,150,243,0.8));
+    border-color: rgba(0,188,212,0.9);
+    box-shadow: 0 0 0 2px rgba(0,188,212,0.35), 0 4px 12px rgba(0,0,0,0.45);
+}
+.filter-menu .filter-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.filter-menu .clear-filters-btn {
+    flex: 0 0 auto;
+    font-size: 0.7rem;
+    padding: 6px 10px;
+    background: #212121;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    transition: background-color .25s ease, box-shadow .25s ease;
+}
+.filter-menu .clear-filters-btn:hover { background: #2a2a2a; }
+.filter-menu .clear-filters-btn:disabled { opacity: .4; cursor: default; }
+
+@media (max-width: 600px) {
+    .filter-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: auto;
+        margin-top: 6px;
+        width: 92vw;
+        max-width: 92vw;
+        border-radius: 12px;
+        padding: 14px 14px 18px;
+        max-height: 60vh;
+    }
+    .filter-menu h3 { font-size: 0.85rem; }
+    .filter-menu .filter-tag { font-size: 0.65rem; }
 }
 
 .game .view-btn {
@@ -561,7 +742,7 @@ footer p {
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;          /* allow wrapping on narrow screens */
-    gap: 8px;                 /* spacing when wrapped */
+    gap: 0;                   /* seamless grouping for filter + input + button */
     margin: 20px 0;
     width: 100%;              /* prevent overflow-caused background gap */
     box-sizing: border-box;
@@ -571,14 +752,22 @@ footer p {
     flex: 1 1 260px;          /* grow/shrink within container */
     max-width: 520px;         /* cap on wide screens */
     min-width: 0;             /* allow shrinking below content width */
-    padding: 10px;
+    padding: 0 12px;          /* horizontal padding only; vertical handled by fixed height */
     border: 1px solid #333;
-    border-radius: 5px 0 0 5px;
+    border-radius: 0; /* middle element when filter toggle present */
+    border-left: none; /* seamless join with filter toggle */
     outline: none;
     font-size: 1rem;
     background-color: #1e1e1e;
     color: #ffffff;
     box-sizing: border-box;
+    height: 44px;             /* align with filter toggle & search button */
+    line-height: 44px;        /* vertically center text */
+}
+@media (max-width: 800px) and (orientation: landscape) {
+    .filter-toggle { height: 40px; }
+    #search-box { padding: 8px 10px; height: 40px; }
+    #search-button { height: 40px; padding: 8px 14px; }
 }
 
 #search-button {
@@ -591,6 +780,8 @@ footer p {
     cursor: pointer;
     transition: background-color 0.3s ease;
     flex: 0 0 auto;           /* keep natural button size */
+    height: 44px;             /* match filter toggle height */
+    line-height: 1;           /* prevent vertical misalignment */
 }
 
 #search-button:hover {
@@ -601,19 +792,11 @@ footer p {
 @media (max-width: 480px) {
     header { padding: 12px; }
     header h1 { font-size: 1.6rem; }
-    .search-container {
-        flex-direction: row;    /* keep on one line to reduce height */
-        align-items: stretch;
-        flex-wrap: nowrap;
-        gap: 0;                 /* no extra width between input/button */
-        margin: 10px auto;      /* compact spacing */
-        max-width: 520px;       /* constrain so it fits on small phones */
-        width: 100%;
-    }
+    .search-container { flex-direction: row; align-items: stretch; flex-wrap: nowrap; gap: 0; margin: 10px auto; max-width: 520px; width: 100%; }
     #search-box {
         flex: 1 1 auto;
         min-width: 0;           /* allow shrinking to avoid overflow */
-        border-radius: 5px 0 0 5px;
+        border-radius: 0;       /* middle piece */
         padding: 8px;           /* slimmer input height */
         font-size: 1rem;        /* keep 16px to avoid zoom */
     }

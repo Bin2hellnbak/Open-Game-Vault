@@ -240,17 +240,20 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 		for (const [slug, entry] of entries) {
 			const name = entry?.name || slug;
+			const tags = Array.isArray(entry?.tags) ? entry.tags : [];
 			const sec = document.createElement('section');
 			sec.className = 'game';
 			sec.id = slug;
 			sec.dataset.title = name;
+			if (tags.length) sec.dataset.tags = tags.join(',');
 			sec.dataset.folder = `assets/games/galleries/${slug}`;
 			sec.innerHTML = `
 				<div class="game-header">
 					<h2 class="title"><a class="title-link" href="game.html?g=${slug}"><span class="game-title-text">${name}</span></a></h2>
 					<a class="btn view-btn" href="game.html?g=${slug}">View</a>
 				</div>
-				<div class="cover" data-game="${slug}"></div>`;
+				<div class="cover" data-game="${slug}"></div>
+				${tags.length ? `<div class="tags" aria-label="Tags">${tags.map(t => `<span class=\"tag\">${t}</span>`).join('')}</div>` : ''}`;
 			container.appendChild(sec);
 			// Try to replace text title with logo image if it exists
 			try {
