@@ -370,6 +370,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (searchBox.value || activeTags.size) { searchGames(); } else { applyStagger(); }
     }
 
+    // Click a tag pill on any card to toggle that tag filter
+    if (gamesContainer) {
+        gamesContainer.addEventListener('click', (e) => {
+            const pill = e.target.closest('.tag');
+            if (!pill) return;
+            const t = pill.textContent.trim().toLowerCase();
+            if (!t) return;
+            if (activeTags.has(t)) activeTags.delete(t); else activeTags.add(t);
+            searchGames();
+            buildFilterMenu();
+            updateFilterToggleState();
+        });
+    }
+
     // Run once now and again after games are (re)rendered
     runInitial();
     window.addEventListener('gamesRendered', () => { snapshotGames(); buildFilterMenu(); runInitial(); });

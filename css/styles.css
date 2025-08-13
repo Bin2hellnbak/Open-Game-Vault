@@ -353,6 +353,7 @@ html[data-page="index"] .game-header .view-btn { top:50%; transform:translateY(-
     display: inline-flex;          /* keep pill intact */
     align-items: center;
     white-space: nowrap;           /* prevent breaking inside tag (e.g., fast-paced) */
+    cursor: pointer;               /* clickable to filter */
 }
 /* Tag container: symmetric vertical spacing */
 .game .tags { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
