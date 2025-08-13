@@ -22,6 +22,16 @@
     lightboxVideo.style.maxHeight = '80%';
     lightbox.appendChild(lightboxImage);
     lightbox.appendChild(lightboxVideo);
+    // Relay key video state changes so other systems (e.g., background music) can react
+    try {
+      lightboxVideo.addEventListener('playing', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoPlay')); } catch {} });
+      lightboxVideo.addEventListener('play', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoPlay')); } catch {} });
+      lightboxVideo.addEventListener('pause', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoPause')); } catch {} });
+      lightboxVideo.addEventListener('ended', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoPause')); } catch {} });
+      lightboxVideo.addEventListener('volumechange', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoVolume')); } catch {} });
+      lightboxVideo.addEventListener('seeking', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoSeeking')); } catch {} });
+      lightboxVideo.addEventListener('seeked', () => { try { window.dispatchEvent(new CustomEvent('lightboxVideoSeeked')); } catch {} });
+    } catch {}
 
     const controls = document.createElement('div');
     controls.className = 'controls';
@@ -89,19 +99,20 @@
       if (el && el.scrollIntoView) el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     };
 
-    const renderCurrent = () => {
+  const renderCurrent = () => {
       const item = currentGallery[currentIndex];
       const isVideo = /\.(mp4|webm|ogg)$/i.test(item);
       if (isVideo) {
         lightboxImage.style.display = 'none';
         lightboxVideo.style.display = 'block';
         lightboxVideo.src = item;
-        lightboxVideo.play().catch(() => { });
+    lightboxVideo.play().then(() => { try { window.dispatchEvent(new CustomEvent('lightboxVideoPlay')); } catch {} }).catch(() => { });
       } else {
         lightboxVideo.pause();
         lightboxVideo.style.display = 'none';
         lightboxImage.style.display = 'block';
         lightboxImage.src = item;
+    try { window.dispatchEvent(new CustomEvent('lightboxVideoPause')); } catch {}
       }
       updateThumbActive();
       scrollThumbIntoView();
@@ -112,6 +123,7 @@
       renderCurrent();
       lightbox.style.display = 'flex';
       document.body.classList.add('no-scroll');
+      try { window.dispatchEvent(new CustomEvent('lightboxOpen')); } catch {}
     };
     const closeLightbox = () => {
       // Stop any playing video when closing
@@ -120,6 +132,7 @@
       lightboxVideo.load?.();
       lightbox.style.display = 'none';
       document.body.classList.remove('no-scroll');
+      try { window.dispatchEvent(new CustomEvent('lightboxClose')); } catch {}
     };
     const showNextImage = () => { currentIndex = (currentIndex + 1) % currentGallery.length; renderCurrent(); };
     const showPrevImage = () => { currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length; renderCurrent(); };

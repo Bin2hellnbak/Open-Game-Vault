@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', () => {
 	// Only run on main page (we tagged index by setting data-page in index.html before other scripts)
 	const isIndex = document.documentElement.getAttribute('data-page') === 'index';
 
+	// If we land on the index with a per-game track still playing (from history), switch back to general
+	try {
+		if (isIndex) {
+			// Will be corrected again after audio init if needed
+			const GENERAL_BASE = 'assets/general/audio/music/background/';
+			const isFromGeneral = (url) => !!(url && url.indexOf(GENERAL_BASE) === 0);
+			// We don't have the audio element yet here; the later pageshow hook also handles it.
+		}
+	} catch {}
+
 	// Build starfield background (run on all pages)
 	(function initStarfield(){
 		const sf = document.createElement('div');
@@ -202,11 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	})();
 
-	// For non-index pages, stop here (starfield only)
-	if (!isIndex) return;
+	// Index-specific rendering below is gated; other features (e.g., music) run on all pages
 
 	// Sync index card titles from the manifest so renames in games.json reflect on the main page
-	(async function renderIndexFromManifest(){
+	if (isIndex) (async function renderIndexFromManifest(){
 		const container = document.getElementById('games-container');
 		if (!container) return;
 		container.innerHTML = '';
@@ -485,35 +494,85 @@ document.addEventListener('DOMContentLoaded', () => {
 		} catch {}
 	}
 
-		const base = 'assets/audio/music/background/';
-		const FALLBACK = base + 'background-music-1.mp3';
+		function getPageType(){ return document.documentElement.getAttribute('data-page') || ''; }
+		function getGameSlug(){
+			try { const u = new URL(window.location.href); return u.searchParams.get('g') || null; } catch { return null; }
+		}
+		function getMusicBases(){
+			const page = getPageType();
+			if (page === 'game') {
+				const slug = getGameSlug();
+				if (slug) return [ `assets/games/background-music/${slug}/`, 'assets/general/audio/music/background/' ];
+			}
+			return [ 'assets/general/audio/music/background/' ];
+		}
+		const BASES = getMusicBases();
+		const GENERAL_BASE = 'assets/general/audio/music/background/';
+		const FALLBACK = GENERAL_BASE + 'background-music-1.mp3';
+		function startsWithAnyBase(url) {
+			try { return !!(url && BASES.some(b => url.indexOf(b) === 0)); } catch { return false; }
+		}
+		function isFromGeneral(url) { try { return !!(url && url.indexOf(GENERAL_BASE) === 0); } catch { return false; } }
 		const exts = ['mp3','ogg','webm','wav','m4a'];
 		const names = [];
 		// Common patterns
 		for (let i = 1; i <= 20; i++) names.push(`background-music-${i}`);
 		for (let i = 1; i <= 20; i++) names.push(`track-${i}`);
 		for (let i = 1; i <= 20; i++) names.push(`music-${i}`);
-		// Also try a few generic bases
-		names.push('background', 'ambient', 'theme');
+		// Also try a few generic bases (and common single-file names)
+		names.push('background', 'ambient', 'theme', 'background-music', 'bgm', 'menu', 'main');
+		// If on a game page, include slug-based guesses
+		try {
+			const slugGuess = getGameSlug && getGameSlug();
+			if (slugGuess) {
+				names.push(slugGuess);
+				names.push(`${slugGuess}-theme`, `${slugGuess}-bgm`, `${slugGuess}-music`);
+			}
+		} catch {}
 
 		async function headExists(url) {
 			try {
-				const res = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
-				return res.ok;
-			} catch {
+				let res = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+				if (res.ok) return true;
+				// Some static servers don't support HEAD; try a tiny ranged GET
+				if (res.status && res.status !== 404) {
+					try {
+						res = await fetch(url, { method: 'GET', headers: { 'Range': 'bytes=0-0' }, cache: 'no-cache' });
+						return res.ok || res.status === 206;
+					} catch {}
+				}
 				return false;
+			} catch {
+				// Final fallback: normal GET
+				try {
+					const res = await fetch(url, { method: 'GET', cache: 'no-cache' });
+					return res.ok;
+				} catch { return false; }
 			}
 		}
 
 		async function discoverTracks() {
 			const candidates = [];
-			// Specific known file as a baseline candidate
-			candidates.push(base + 'background-music-1.mp3');
-			for (const n of names) {
-				for (const e of exts) {
-					candidates.push(`${base}${n}.${e}`);
+			// Build candidate list across all bases, prefer earlier bases (per-game first)
+			for (const base of BASES) {
+				candidates.push(base + 'background-music-1.mp3');
+				for (const n of names) {
+					for (const e of exts) {
+						candidates.push(`${base}${n}.${e}`);
+					}
 				}
 			}
+			// Also add a small set of numbered guesses in the per-game base specifically
+			try {
+				const page = getPageType && getPageType();
+				const slug = getGameSlug && getGameSlug();
+				if (page === 'game' && slug) {
+					const pg = `assets/games/background-music/${slug}/`;
+					for (let i = 1; i <= 5; i++) {
+						for (const e of exts) candidates.push(`${pg}track-${i}.${e}`);
+					}
+				}
+			} catch {}
 			// Deduplicate
 			const seen = new Set();
 			const uniq = candidates.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
@@ -526,6 +585,35 @@ document.addEventListener('DOMContentLoaded', () => {
 				if (await headExists(url)) found.push(url);
 			}
 			return found;
+		}
+
+		// Quick per-game probe: try a small set of common filenames in the game's folder with a short timeout, resolve on first hit
+		async function fastFindPerGameTrack(slug, timeoutMs = 700) {
+			try {
+				if (!slug) return null;
+				const base = `assets/games/background-music/${slug}/`;
+				const quickNames = [
+					'background-music','background-music-1','bgm','background','theme','main','menu','track','track-1','music','music-1',
+					slug, `${slug}-theme`, `${slug}-bgm`, `${slug}-music`, `${slug}-track-1`, `${slug}-music-1`
+				];
+				const urls = [];
+				for (const n of quickNames) {
+					for (const e of exts) { urls.push(`${base}${n}.${e}`); }
+					if (urls.length > 48) break;
+				}
+				return await new Promise((resolve) => {
+					let resolved = false; let pending = urls.length;
+					if (!pending) { resolve(null); return; }
+					const timer = setTimeout(() => { if (!resolved) { resolved = true; resolve(null); } }, timeoutMs);
+					urls.forEach(u => {
+						headExists(u).then(ok => {
+							if (ok && !resolved) { resolved = true; clearTimeout(timer); resolve(u); }
+						}).catch(() => {}).finally(() => {
+							pending--; if (pending === 0 && !resolved) { clearTimeout(timer); resolved = true; resolve(null); }
+						});
+					});
+				});
+			} catch { return null; }
 		}
 
 		const audio = new Audio();
@@ -550,6 +638,20 @@ document.addEventListener('DOMContentLoaded', () => {
 	const FADE_DURATION_MS = 2000; // fade length
 	const MAX_VOL = 0.1; // cap overall volume at 10%
 	const PREF_KEY = 'sound-pref'; // 'on' | 'off'
+	const VOL_KEY = 'bgm-volume'; // persisted background music volume (0..MAX_VOL)
+	const LAST_URL_KEY = 'bgm-last-url';
+	const LAST_POS_KEY = 'bgm-last-pos';
+	// Persisted user-preferred background music volume; default to MAX_VOL
+	let userBgmVol = (() => {
+		try {
+			const raw = localStorage.getItem(VOL_KEY);
+			if (!raw) return MAX_VOL;
+			const v = parseFloat(raw);
+			if (!isFinite(v)) return MAX_VOL;
+			return Math.max(0, Math.min(MAX_VOL, v));
+		} catch { return MAX_VOL; }
+	})();
+	function getTargetVol(){ return Math.max(0, Math.min(MAX_VOL, userBgmVol)); }
 	const isMobileLike = () => (
 		window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
 	) || (window.innerWidth <= 600);
@@ -558,6 +660,12 @@ document.addEventListener('DOMContentLoaded', () => {
 		let tracks = []; // discovered playlist
 	let fadeTimer = null;
 	let unlocked = false; // moved up so other functions can check it
+	// Prevent audible fade-up on game pages until we confirm a per-game track or rule it out
+	let allowAudible = true;
+	try { const __pt = (getPageType && getPageType()); if (__pt === 'game') allowAudible = false; } catch {}
+	// Guard against unintended early replays caused by redundant src assignment
+	let firstTrackCommitted = false; // becomes true once initial intended track starts
+	let lastSrcSetAt = 0; // timestamp of last src change
 
 	// Simple sound toggle UI (index only) — placed in header top-right
 	let toggleEl = null;
@@ -590,20 +698,43 @@ document.addEventListener('DOMContentLoaded', () => {
 			// Treat as explicit user gesture unlock (after pref flip)
 			if (!unlocked) onFirstUserGesture();
 			if (prefOn) {
-				// Ensure we have a source and are playing
-				if (!audio.src) {
-					if (Array.isArray(tracks) && tracks.length > 0) {
-						playNext();
-					} else {
-						audio.src = FALLBACK;
-						audio.currentTime = 0;
-						audio.play().catch(() => {});
-					}
+					// Ensure we have a source and are playing
+					if (!audio.src) {
+						let started = false;
+						try {
+							const lastUrl = localStorage.getItem(LAST_URL_KEY);
+							if (lastUrl && Array.isArray(tracks) && tracks.includes(lastUrl)) {
+								const page = getPageType && getPageType();
+								const slug = getGameSlug && getGameSlug();
+								let allow = false;
+								if (page === 'index') allow = isFromGeneral(lastUrl);
+								else if (page === 'game' && slug) allow = lastUrl.indexOf(`assets/games/background-music/${slug}/`) === 0;
+								if (allow) {
+									audio.src = lastUrl;
+									const lastPos = parseFloat(localStorage.getItem(LAST_POS_KEY) || '0');
+									if (isFinite(lastPos) && lastPos > 0) {
+										const setPos = () => { try { audio.currentTime = lastPos; } catch {} };
+										if ((audio.readyState || 0) >= 1) setPos(); else audio.addEventListener('loadedmetadata', setPos, { once: true });
+									}
+									audio.play().catch(() => {});
+									started = true;
+								}
+							}
+						} catch {}
+						if (!started) {
+							if (Array.isArray(tracks) && tracks.length > 0) {
+								playNext();
+							} else {
+								audio.src = FALLBACK;
+								audio.currentTime = 0;
+								audio.play().catch(() => {});
+							}
+						}
 				} else if (audio.paused) {
 					audio.play().catch(() => {});
 				}
-				audio.muted = false;
-				fadeTo(MAX_VOL);
+						audio.muted = false;
+						maybeFadeUp();
 			} else {
 				fadeTo(0, () => { audio.muted = true; audio.pause(); });
 			}
@@ -660,8 +791,24 @@ document.addEventListener('DOMContentLoaded', () => {
 			n++;
 			const t = Math.min(1, n / steps);
 			audio.volume = Math.max(0, Math.min(MAX_VOL, startVol + delta * t));
-			if (t >= 1) { clearInterval(fadeTimer); fadeTimer = null; cb && cb(); }
+			if (t >= 1) {
+				clearInterval(fadeTimer); fadeTimer = null;
+				if (targetVol > 0) {
+					userBgmVol = Math.max(0, Math.min(MAX_VOL, targetVol));
+					try { localStorage.setItem(VOL_KEY, String(userBgmVol)); } catch {}
+				}
+				cb && cb();
+			}
 		}, FADE_INTERVAL_MS);
+	}
+
+	function maybeFadeUp(){
+		try {
+				if (prefOn && allowAudible) {
+					if (audio.muted) audio.muted = false;
+					fadeTo(getTargetVol());
+			}
+		} catch {}
 	}
 
 		function playNext() {
@@ -683,17 +830,65 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	// Start something immediately (muted) so a quick first tap can unmute it on mobile
-	function bootstrapPlay() {
+	async function bootstrapPlay() {
 		if (!prefOn) {
 			// Respect user's muted preference: don't start playback at all
 			return;
 		}
 		if (!audio.src) {
-			audio.src = FALLBACK;
+			const page = getPageType && getPageType();
+			const slug = getGameSlug && getGameSlug();
+			let set = false;
+			// On game page: blocking fast per-game discovery (short) so we start correct track immediately if it exists
+			if (page === 'game' && slug) {
+				try {
+					const cacheKeyUrl = `bgm-pergame-url:${slug}`;
+					const cacheKeyNone = `bgm-pergame-none:${slug}`;
+					const cachedUrl = localStorage.getItem(cacheKeyUrl);
+					const cachedNone = localStorage.getItem(cacheKeyNone);
+					if (cachedUrl) {
+						if (audio.src !== cachedUrl) { audio.src = cachedUrl; lastSrcSetAt = Date.now(); }
+						set = true; allowAudible = true;
+					} else {
+						const url = await fastFindPerGameTrack(slug, 650);
+							if (url) {
+								try { localStorage.setItem(cacheKeyUrl, url); localStorage.removeItem(cacheKeyNone); } catch {}
+								if (audio.src !== url) { audio.src = url; lastSrcSetAt = Date.now(); }
+								set = true; allowAudible = true;
+						} else {
+							try { localStorage.setItem(cacheKeyNone, '1'); localStorage.removeItem(cacheKeyUrl); } catch {}
+							allowAudible = true; // no per-game track
+						}
+					}
+				} catch {}
+			}
+			// Try to resume last known track, but only if appropriate for this page
+			try {
+				if (!set) {
+					const lastUrl = localStorage.getItem(LAST_URL_KEY);
+					if (lastUrl) {
+						let allow = false;
+						if (page === 'index') allow = isFromGeneral(lastUrl);
+						else if (page === 'game' && slug) allow = lastUrl.indexOf(`assets/games/background-music/${slug}/`) === 0;
+						if (allow) {
+							audio.src = lastUrl;
+							const lastPos = parseFloat(localStorage.getItem(LAST_POS_KEY) || '0');
+							if (isFinite(lastPos) && lastPos > 0) {
+								const setPos = () => { try { audio.currentTime = lastPos; } catch {} };
+								if ((audio.readyState || 0) >= 1) setPos(); else audio.addEventListener('loadedmetadata', setPos, { once: true });
+							}
+							set = true;
+						}
+					}
+				}
+			} catch {}
+			if (!set && !audio.src) { audio.src = FALLBACK; lastSrcSetAt = Date.now(); }
 		}
-		audio.currentTime = 0;
-			audio.muted = !prefOn; // honor saved preference
+		// If we explicitly set a last position above, keep it; otherwise start at 0
+		if ((audio.currentTime || 0) === 0) audio.currentTime = 0;
+		audio.muted = !prefOn; // honor saved preference
 		audio.play().then(() => {
+			if (!firstTrackCommitted) firstTrackCommitted = true;
 			tryUnmuteIfAllowed();
 			setTimeout(tryUnmuteIfAllowed, 300);
 			setTimeout(tryUnmuteIfAllowed, 1500);
@@ -705,7 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	// If playback starts and we're unmuted or allowed, ensure we fade up to target volume
 	audio.addEventListener('play', () => {
 		if (!audio.muted && audio.volume < MAX_VOL) {
-			fadeTo(MAX_VOL);
+				maybeFadeUp();
 		}
 	});
 
@@ -719,8 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			audio.volume = 0;
 				audio.play().then(() => {
 					// Mark as unlocked so future tracks don't re-mute
-					unlocked = true;
-					fadeTo(MAX_VOL);
+						unlocked = true;
+						maybeFadeUp();
 			}).catch(() => {
 				// Revert if not allowed
 				audio.muted = wasMuted;
@@ -734,7 +929,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Show the toggle if autoplay remains muted after a short delay (typical desktop policy)
 	function maybeShowToggle(autoplayBlocked = false) {
-		if (!isIndex) return;
 		ensureMusicToggle();
 		updateToggleLabel();
 		// Always show the toggle; optionally show a brief hint when blocked and preference is on
@@ -743,14 +937,14 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	}
 
-	audio.addEventListener('ended', () => {
+		audio.addEventListener('ended', () => {
 		if (!prefOn) { return; }
 		// If only one track, loop with fade-in at restart
 		if (tracks.length <= 1) {
 				audio.currentTime = 0;
 				audio.volume = 0;
 				audio.muted = !unlocked;
-				audio.play().then(() => fadeTo(MAX_VOL)).catch(() => requestUserUnlock());
+					audio.play().then(() => maybeFadeUp()).catch(() => requestUserUnlock());
 			return;
 		}
 		// Otherwise shuffle next (no immediate repeat)
@@ -758,11 +952,32 @@ document.addEventListener('DOMContentLoaded', () => {
 		playNext();
 	});
 
+	// Persist current track URL and playhead occasionally (scoped by page)
+	setInterval(() => {
+		try {
+			if (audio && audio.src) {
+				const page = getPageType && getPageType();
+				const slug = getGameSlug && getGameSlug();
+				let allow = false;
+				if (page === 'index') {
+					// Only persist general library on index
+					allow = isFromGeneral(audio.src);
+				} else if (page === 'game' && slug) {
+					// Only persist per-game URL if it belongs to this game
+					allow = audio.src.indexOf(`assets/games/background-music/${slug}/`) === 0;
+				}
+				if (allow) localStorage.setItem(LAST_URL_KEY, audio.src);
+			}
+			if (!isNaN(audio.currentTime)) localStorage.setItem(LAST_POS_KEY, String(Math.floor(audio.currentTime)));
+		} catch {}
+	}, 4000);
+
 	// Optional: fade out just before the end of the track
 	audio.addEventListener('timeupdate', () => {
-		const remaining = (audio.duration || 0) - audio.currentTime;
+		// Only apply near-end fade if we have a real duration (>= 15s) to avoid early false fades
+		if (!audio.duration || !isFinite(audio.duration) || audio.duration < 15) return;
+		const remaining = audio.duration - audio.currentTime;
 		if (remaining > 0 && remaining < 2.2 && audio.volume > 0.01) {
-			// Start fade out near the end; guard so it doesn't loop re-trigger
 			fadeTo(0);
 		}
 	});
@@ -780,8 +995,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.removeEventListener('mousemove', onFirstUserGesture);
 		// Only start/resume playback if user preference is ON
 		if (prefOn) {
-			audio.muted = false;
-			fadeTo(MAX_VOL);
+				audio.muted = false;
+			maybeFadeUp();
 			if (audio.paused) {
 				audio.play().catch(() => {});
 			}
@@ -819,15 +1034,26 @@ document.addEventListener('DOMContentLoaded', () => {
 	window.addEventListener('pageshow', (e) => {
 		if (!isIndex) return;
 		if (prefOn) {
-			// Ensure a ready source and resume immediately
-			if (!audio.src || (audio.readyState || 0) < 2) {
-				audio.src = FALLBACK;
-				audio.currentTime = 0;
+			// If we're on the index and playing a per-game track, switch back to general
+			if (audio.src && !isFromGeneral(audio.src)) {
+				const switchToGeneral = () => {
+					audio.src = FALLBACK;
+					audio.currentTime = 0;
+					audio.muted = !unlocked;
+					audio.play().then(() => maybeFadeUp()).catch(() => requestUserUnlock());
+				};
+				fadeTo(0, switchToGeneral);
+			} else {
+				// Ensure a ready general source and resume immediately
+				if (!audio.src || (audio.readyState || 0) < 2) {
+					audio.src = FALLBACK;
+					audio.currentTime = 0;
+				}
+				if (audio.paused) {
+					audio.play().catch(() => {});
+				}
+				tryUnmuteIfAllowed();
 			}
-			if (audio.paused) {
-				audio.play().catch(() => {});
-			}
-			tryUnmuteIfAllowed();
 		}
 	});
 
@@ -836,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			ensureMusicToggle();
 			updateToggleLabel();
 			// Request unlock listeners ASAP and attempt a muted fallback right away
-			bootstrapPlay();
+			await bootstrapPlay();
 				tracks = await discoverTracks();
 			// If discovery failed for any reason, keep at least the baseline file
 			if (!tracks || tracks.length === 0) {
@@ -844,7 +1070,38 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 			// If still empty, bail
 			if (!tracks.length) return;
-			if (prefOn) {
+			// On game pages, if per-game tracks exist, switch to one immediately (unless already committed)
+			try {
+				const page = getPageType && getPageType();
+				const slug = getGameSlug && getGameSlug();
+				if (page === 'game' && slug && prefOn) {
+					const perGameBase = `assets/games/background-music/${slug}/`;
+					const perGameTracks = tracks.filter(u => typeof u === 'string' && u.indexOf(perGameBase) === 0);
+					if (perGameTracks.length && !firstTrackCommitted) {
+						const pick = perGameTracks[Math.floor(Math.random() * perGameTracks.length)];
+						const doSwitch = () => {
+							if (audio.src === pick && audio.currentTime > 1) { firstTrackCommitted = true; return; }
+							if (audio.src !== pick) { audio.src = pick; lastSrcSetAt = Date.now(); }
+							// Only reset time if new track
+							if (audio.currentTime < 0.5) audio.currentTime = 0;
+							audio.muted = !unlocked;
+							audio.play().then(() => { allowAudible = true; firstTrackCommitted = true; maybeFadeUp(); }).catch(() => requestUserUnlock());
+							try { localStorage.setItem('bgm-origin', 'per-game'); } catch {}
+						};
+						// If something already playing, fade out then switch; else just switch
+						if (!audio.paused && (audio.src || '').indexOf(perGameBase) !== 0) {
+							fadeTo(0, doSwitch);
+						} else if (!audio.src) {
+							doSwitch();
+						}
+					} else {
+						// No per-game tracks; allow general audio to be audible
+						allowAudible = true;
+					}
+				}
+			} catch {}
+			// Otherwise, if nothing is set yet, start playback
+			if (prefOn && !audio.src) {
 				playNext();
 			}
 			setTimeout(maybeShowToggle, 1000);
@@ -1067,11 +1324,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Duck background music when any audible video is playing (index only)
 		(function setupVideoAudioDucking(){
 			try {
-				const isIndexHere = document.documentElement.getAttribute('data-page') === 'index';
-				if (!isIndexHere) return;
 				function isAudible(v){
 					if (!v) return false;
-					const playing = !v.paused && !v.ended && v.readyState >= 2;
+					const playing = !v.paused && !v.ended; // drop strict readyState check
 					return playing && !v.muted && (v.volume || 0) > 0;
 				}
 				function anyAudibleVideo(){
@@ -1081,14 +1336,34 @@ document.addEventListener('DOMContentLoaded', () => {
 				}
 				function updateMusicForVideos(){
 					if (!prefOn) return; // if user turned music off, don't change
-					if (anyAudibleVideo()) fadeTo(0); else fadeTo(MAX_VOL);
+					if (anyAudibleVideo()) fadeTo(0); else maybeFadeUp();
 				}
-				const onVideoEvent = (e) => { if (e && e.target && e.target.tagName === 'VIDEO') setTimeout(updateMusicForVideos, 0); };
+				const onVideoEvent = (e) => {
+					if (!(e && e.target && e.target.tagName === 'VIDEO')) return;
+					// Run multiple short follow-ups to catch state transitions (decode -> playing)
+					setTimeout(updateMusicForVideos, 0);
+					setTimeout(updateMusicForVideos, 120);
+					setTimeout(updateMusicForVideos, 350);
+					setTimeout(updateMusicForVideos, 900);
+				};
 				document.addEventListener('play', onVideoEvent, true);
+				document.addEventListener('playing', onVideoEvent, true);
 				document.addEventListener('pause', onVideoEvent, true);
 				document.addEventListener('ended', onVideoEvent, true);
 				document.addEventListener('volumechange', onVideoEvent, true);
+				document.addEventListener('seeking', onVideoEvent, true);
+				document.addEventListener('seeked', onVideoEvent, true);
+				// React to lightbox lifecycle and explicit lightbox video events, too
+				['lightboxOpen','lightboxClose','lightboxVideoPlay','lightboxVideoPause','lightboxVideoVolume','lightboxVideoSeeking','lightboxVideoSeeked']
+					.forEach(evt => window.addEventListener(evt, () => {
+						setTimeout(updateMusicForVideos, 0);
+						setTimeout(updateMusicForVideos, 120);
+						setTimeout(updateMusicForVideos, 350);
+					}, { passive: true }));
 				window.addEventListener('gamesRendered', () => setTimeout(updateMusicForVideos, 0));
+				// Initial pass in case a video is already playing (e.g., lightbox on game page)
+				setTimeout(updateMusicForVideos, 0);
+				setTimeout(updateMusicForVideos, 400);
 			} catch {}
 		})();
 });

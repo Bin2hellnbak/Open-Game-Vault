@@ -699,8 +699,8 @@ body.no-scroll {
     cursor: pointer;
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.music-toggle.on { background-image: url('../assets/icons/music-playing.png'); }
-.music-toggle.off { background-image: url('../assets/icons/music-muted.png'); }
+.music-toggle.on { background-image: url('../assets/general/icons/music-playing.png'); }
+.music-toggle.off { background-image: url('../assets/general/icons/music-muted.png'); }
 .music-toggle:hover { opacity: 0.9; }
 .music-toggle:focus { outline: none; }
 .music-toggle { -webkit-tap-highlight-color: transparent; }
