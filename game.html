@@ -15,7 +15,7 @@
   </header>
   <main>
     <section class="game game-details" id="game-details">
-      <h2>About</h2>
+      <div class="about-header"><h2>About</h2><span id="about-release-date" class="release-date" hidden></span></div>
       <p id="game-description"></p>
       <h2>Gallery</h2>
       <div class="gallery" id="game-gallery"></div>
@@ -125,6 +125,17 @@
       document.title = `${game.name || slug} - Game Details`;
       // Description
       document.getElementById('game-description').textContent = game.description || '';
+      // Release date inline in About heading
+      try {
+        const span = document.getElementById('about-release-date');
+        if (span && game.releaseDate) {
+          const dt = new Date(game.releaseDate);
+          if (!isNaN(dt.getTime())) {
+            span.textContent = dt.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'2-digit'});
+            span.removeAttribute('hidden');
+          }
+        }
+      } catch {}
       // Tags (if any)
       if (Array.isArray(game.tags) && game.tags.length) {
         const details = document.getElementById('game-details');

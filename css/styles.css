@@ -17,6 +17,19 @@ body {
     background-image: none;
     overflow-x: hidden;        /* guard against accidental horizontal scroll on mobile */
 }
+    /* Release date metadata */
+    .game .meta { margin-top: 4px; font-size: 0.75rem; opacity: 0.8; }
+    .game .meta .release-date { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; display: inline-block; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; opacity:.9; }
+    .release-date-badge { margin-left: auto; font-size: 0.8rem; background: rgba(255,255,255,0.12); padding: 4px 8px; border-radius: 6px; align-self: center; }
+    /* Hide per-card release date unless sorting by date */
+    html:not(.sort-by-date) .game .meta { display: none; }
+    html.sort-by-date .game .meta { display: block; }
+    /* Inline release date in About heading on game detail page */
+    /* (Removed obsolete .about-heading styles) */
+    /* New about header layout */
+    .game-details .about-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .game-details .about-header h2 { margin:0; }
+    .game-details .about-header .release-date { font-size:0.7rem; background: rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; letter-spacing:.5px; font-weight:600; text-transform:uppercase; opacity:.9; }
 
 /* JS-generated spiral galaxies inside .starfield */
 .starfield .galaxy {
@@ -490,7 +503,7 @@ html[data-page="index"] .game .tags { max-width:100%; overflow:hidden; }
 }
 .filter-menu .filter-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .filter-menu .filter-sort-section { margin-top:18px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px; }
-.filter-menu .filter-sort-section h3 { margin:0 0 4px; font-size: 0.95rem; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:#00bcd4; }
+.filter-menu .filter-sort-section h3 { margin:0 0 16px; font-size: 0.95rem; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:#00bcd4; }
 .filter-menu .filter-sort-section .sort-modes { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 4px; }
 .filter-menu .filter-sort-section .sort-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
 .filter-menu .filter-sort-section .sort-option { min-width:34px; padding:6px 8px; font-size:0.8rem; }

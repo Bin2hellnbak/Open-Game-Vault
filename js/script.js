@@ -233,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 		for (const [slug, entry] of entries) {
 			const name = entry?.name || slug;
+				const releaseDate = entry?.releaseDate || '';
 				let tags = Array.isArray(entry?.tags) ? entry.tags.slice() : [];
 				// Global canonical tag order
 				const TAG_ORDER = [
@@ -259,6 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			sec.dataset.title = name;
 			if (tags.length) sec.dataset.tags = tags.join(',');
 			sec.dataset.folder = `assets/games/galleries/${slug}`;
+			if (releaseDate) sec.dataset.releaseDate = releaseDate; // ISO format YYYY-MM-DD
 			sec.innerHTML = `
 				<div class="card-top">
 					<div class="game-header">
@@ -267,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					</div>
 					<div class="cover" data-game="${slug}"></div>
 				</div>
+				${releaseDate ? `<div class="meta"><span class="release-date" title="Release Date">${new Date(releaseDate).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'2-digit'})}</span></div>` : ''}
 				${tags.length ? `<div class="tags" aria-label="Tags">${tags.map(t => `<span class=\"tag\">${t}</span>`).join('')}</div>` : ''}`;
 			container.appendChild(sec);
 			// Try to replace text title with logo image if it exists

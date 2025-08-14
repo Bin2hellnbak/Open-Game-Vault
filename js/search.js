@@ -10,8 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const snapshotGames = () => { allGames = Array.from(gamesContainer.querySelectorAll('.game')); };
     const status = document.getElementById("results-status");
 
-    // Sorting state (alphabetical by title)
-    let sortMode = null; // 'asc' | 'desc' | null
+    // Sorting state
+    // Modes: 'asc' (A→Z), 'desc' (Z→A), 'date-new' (Newest first), 'date-old' (Oldest first)
+    let sortMode = null;
     const SORT_PARAM = 'sort';
     const STORAGE_SORT = 'ogv:search:sort';
 
@@ -79,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
         activeTags.clear();
         if (tagStr) tagStr.split(',').map(t => t.trim().toLowerCase()).filter(Boolean).forEach(t => activeTags.add(t));
     const s = params.get(SORT_PARAM);
-    sortMode = (s === 'asc' || s === 'desc') ? s : null;
+    sortMode = (s === 'asc' || s === 'desc' || s === 'date-new' || s === 'date-old') ? s : null;
         return q;
     }
 
@@ -131,28 +132,48 @@ document.addEventListener("DOMContentLoaded", () => {
         const sortHeading = document.createElement('h3');
         sortHeading.textContent = 'Sorting';
         sortSection.appendChild(sortHeading);
-        // Sorting mode buttons (future-proof for other modes like date)
+        // Basis buttons
         const sortModeWrap = document.createElement('div');
         sortModeWrap.className = 'sort-modes';
-        const alphaBtn = document.createElement('button');
-        alphaBtn.type = 'button';
-        alphaBtn.className = 'filter-tag sort-mode';
-        alphaBtn.textContent = 'Alphabetical';
-        // Only mode currently; always active visually
-        alphaBtn.classList.add('active');
-        sortModeWrap.appendChild(alphaBtn);
+        const current = sortMode || 'asc';
+        const basis = current.startsWith('date') ? 'date' : 'alpha';
+        const makeBasisBtn = (id,label) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'filter-tag sort-mode';
+            btn.textContent = label;
+            if ((id === 'alpha' && basis === 'alpha') || (id === 'date' && basis === 'date')) btn.classList.add('active');
+            btn.addEventListener('click', () => {
+                if (id === 'alpha') {
+                    if (!sortMode || !['asc','desc'].includes(sortMode)) sortMode = 'asc';
+                } else {
+                    if (!sortMode || !sortMode.startsWith('date')) sortMode = 'date-new';
+                }
+                searchGames();
+                buildFilterMenu();
+            });
+            return btn;
+        };
+        sortModeWrap.appendChild(makeBasisBtn('alpha','Alphabetical'));
+        sortModeWrap.appendChild(makeBasisBtn('date','Release Date'));
         sortSection.appendChild(sortModeWrap);
-        // Asc / Desc controls
+        // Order controls based on basis
         const orderWrap = document.createElement('div');
         orderWrap.className = 'sort-btns';
-        ['asc','desc'].forEach(mode => {
+        const modes = basis === 'date' ? ['date-new','date-old'] : ['asc','desc'];
+        modes.forEach(mode => {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'filter-tag sort-option';
             b.dataset.sort = mode;
-            b.textContent = mode === 'asc' ? '↑' : '↓';
-            b.setAttribute('aria-label', mode === 'asc' ? 'Sort ascending' : 'Sort descending');
-            if ((sortMode || 'asc') === mode) b.classList.add('active');
+            let label = '';
+            if (mode === 'asc') label = 'A→Z';
+            else if (mode === 'desc') label = 'Z→A';
+            else if (mode === 'date-new') label = 'Newest';
+            else if (mode === 'date-old') label = 'Oldest';
+            b.textContent = label;
+            b.setAttribute('aria-label', `Sort by ${label}`);
+            if (sortMode === mode || (!sortMode && mode === (basis==='date' ? 'date-new' : 'asc'))) b.classList.add('active');
             b.addEventListener('click', () => { setSortMode(mode); });
             orderWrap.appendChild(b);
         });
@@ -162,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function setSortMode(mode) {
-    // Null disables; otherwise set new mode (default to 'asc' when enabling without explicit value)
+    // Null disables; otherwise set new mode
     if (!mode) sortMode = null; else sortMode = mode;
         searchGames();
         buildFilterMenu();
@@ -250,6 +271,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const query = raw.toLowerCase();
         // Support comma-separated tag filters e.g. "coop, multiplayer"
         const tagFilters = raw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    // Toggle date-sorting class on root (index page only usage)
+    document.documentElement.classList.toggle('sort-by-date', sortMode === 'date-new' || sortMode === 'date-old');
 
     // Sync URL with current text + active tag selections (text tagFilters no longer implicitly apply multi-tag AND; explicit pills drive AND filtering)
     syncURL(query);
@@ -262,6 +285,13 @@ document.addEventListener("DOMContentLoaded", () => {
             let base = [...allGames];
             if (sortMode === 'asc') base.sort((a,b)=> (a.dataset.title||'').localeCompare(b.dataset.title||'', undefined, { sensitivity:'base' }));
             else if (sortMode === 'desc') base.sort((a,b)=> (b.dataset.title||'').localeCompare(a.dataset.title||'', undefined, { sensitivity:'base' }));
+            else if (sortMode === 'date-new' || sortMode === 'date-old') {
+                base.sort((a,b)=>{
+                    const ad = Date.parse(a.dataset.releaseDate || a.dataset.releasedate || '') || 0;
+                    const bd = Date.parse(b.dataset.releaseDate || b.dataset.releasedate || '') || 0;
+                    return sortMode === 'date-new' ? bd - ad : ad - bd;
+                });
+            }
             base.forEach(g => gamesContainer.appendChild(g));
             applyStagger();
             highlightMatchingTags();
@@ -310,11 +340,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (sortMode === 'asc' || sortMode === 'desc') {
-            // Filter by score>0 then sort alphabetically only
             results.sort((a,b)=> {
                 const an = (a.element.dataset.title||'');
                 const bn = (b.element.dataset.title||'');
                 return sortMode === 'asc' ? an.localeCompare(bn, undefined, { sensitivity:'base' }) : bn.localeCompare(an, undefined, { sensitivity:'base' });
+            });
+        } else if (sortMode === 'date-new' || sortMode === 'date-old') {
+            results.sort((a,b)=> {
+                const ad = Date.parse(a.element.dataset.releaseDate || a.element.dataset.releasedate || '') || 0;
+                const bd = Date.parse(b.element.dataset.releaseDate || b.element.dataset.releasedate || '') || 0;
+                return sortMode === 'date-new' ? bd - ad : ad - bd;
             });
         } else {
             results.sort((a, b) => b.s - a.s);
@@ -362,9 +397,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (!sortMode) {
                 const storedSort = sessionStorage.getItem(STORAGE_SORT);
-                if (storedSort === 'asc' || storedSort === 'desc') sortMode = storedSort;
+                if (storedSort === 'asc' || storedSort === 'desc' || storedSort === 'date-new' || storedSort === 'date-old') sortMode = storedSort;
             }
         } catch {}
+    // Ensure correct class on load
+    document.documentElement.classList.toggle('sort-by-date', sortMode === 'date-new' || sortMode === 'date-old');
     buildFilterMenu();
     updateFilterToggleState();
         if (searchBox.value || activeTags.size) { searchGames(); } else { applyStagger(); }
