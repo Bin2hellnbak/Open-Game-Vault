@@ -1,3 +1,3 @@
-# Website Project
+# Open Game Vault Website
 
-100% vibe code with gpt-5 agent mode co pilot
+100% vibe coded with gpt-5 agent mode co pilot
